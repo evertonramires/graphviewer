@@ -98,8 +98,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - clickedCircle.x * zoom - pan.x,
-        y: y - clickedCircle.y * zoom - pan.y,
+        x: x - circle.x * zoom - pan.x,
+        y: y - circle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else if (tool === 'hand') {
@@ -233,7 +233,7 @@ export default function Home() {
               canvas.style.cursor = 'grab';
             }
           }}
-          active={tool === 'hand' ? true : undefined}
+          active={(tool === 'hand').toString()}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -249,7 +249,7 @@ export default function Home() {
               canvas.style.cursor = 'default';
             }
           }}
-          active={tool === 'circle' ? true : undefined}
+          active={(tool === 'circle').toString()}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -264,7 +264,7 @@ export default function Home() {
               updateCanvasCursor(canvas);
             }
           }}
-          active={tool === 'select' ? true : undefined}
+          active={(tool === 'select').toString()}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
