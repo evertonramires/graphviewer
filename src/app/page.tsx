@@ -27,6 +27,9 @@ export default function Home() {
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [lines, setLines] = useState<[string, string][]>([]);
+  const [isDrawingLine, setIsDrawingLine] = useState(false);
+  const [lineStartCircle, setLineStartCircle] = useState<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -38,6 +41,20 @@ export default function Home() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.scale(zoom, zoom);
 
+    // Draw lines first
+    lines.forEach(([startId, endId]) => {
+      const startCircle = circles.find((c) => c.id === startId);
+      const endCircle = circles.find((c) => c.id === endId);
+
+      if (startCircle && endCircle) {
+        ctx.beginPath();
+        ctx.moveTo(startCircle.x, startCircle.y);
+        ctx.lineTo(endCircle.x, endCircle.y);
+        ctx.stroke();
+      }
+    });
+
+    // Then draw circles
     circles.forEach((circle) => {
       ctx.beginPath();
       ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
@@ -45,7 +62,7 @@ export default function Home() {
       ctx.fill();
       ctx.stroke();
     });
-  }, [circles, zoom, circleRadius, circleColor]);
+  }, [circles, zoom, circleRadius, circleColor, lines]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -65,18 +82,32 @@ export default function Home() {
       }
     }
 
-    if (clickedCircle) {
-      setSelectedCircle(clickedCircle.id);
+    if (isDrawingLine) {
+      if (clickedCircle) {
+        // End line drawing
+        if (lineStartCircle && lineStartCircle !== clickedCircle.id) {
+          setLines([...lines, [lineStartCircle, clickedCircle.id]]);
+        }
+        setIsDrawingLine(false);
+        setLineStartCircle(null);
+      } else {
+        setIsDrawingLine(false);
+        setLineStartCircle(null);
+      }
     } else {
-      setSelectedCircle(null);
-      const newCircle = {
-        id: generateId(),
-        x: x,
-        y: y,
-        radius: circleRadius,
-        color: circleColor,
-      };
-      setCircles([...circles, newCircle]);
+      if (clickedCircle) {
+        setSelectedCircle(clickedCircle.id);
+      } else {
+        setSelectedCircle(null);
+        const newCircle = {
+          id: generateId(),
+          x: x,
+          y: y,
+          radius: circleRadius,
+          color: circleColor,
+        };
+        setCircles([...circles, newCircle]);
+      }
     }
   };
 
@@ -152,6 +183,13 @@ export default function Home() {
     }
   };
 
+  const handleStartLine = () => {
+    if (selectedCircle) {
+      setIsDrawingLine(true);
+      setLineStartCircle(selectedCircle);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
@@ -200,6 +238,9 @@ export default function Home() {
               className="w-32"
             />
           </div>
+          <Button onClick={handleStartLine} disabled={isDrawingLine || !selectedCircle}>
+            {isDrawingLine ? "Drawing Line..." : "Draw Line"}
+          </Button>
           <Button variant="destructive" size="sm" onClick={handleCircleDelete} disabled={!selectedCircle}>
             Delete Circle
           </Button>
