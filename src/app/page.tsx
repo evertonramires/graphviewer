@@ -190,7 +190,7 @@ export default function Home() {
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <Button
           variant="outline"
-          active={tool === 'hand' ? 'true' : undefined}
+          className={tool === 'hand' ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('hand');
             setSelectedCircle(null);
@@ -204,7 +204,7 @@ export default function Home() {
         </Button>
         <Button
           variant="outline"
-          active={tool === 'circle' ? 'true' : undefined}
+          className={tool === 'circle' ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('circle');
             setSelectedCircle(null);
@@ -218,7 +218,7 @@ export default function Home() {
         </Button>
         <Button
           variant="outline"
-          active={tool === 'select' ? 'true' : undefined}
+          className={tool === 'select' ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('select');
             const canvas = canvasRef.current;
