@@ -150,9 +150,30 @@ export default function Home() {
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom((prevZoom) => Math.max(0.1, Math.min(3, prevZoom + delta)));
+    const newZoom = Math.max(0.1, Math.min(3, zoom + delta));
+
+    // Calculate the focus point relative to the canvas
+    const focusX = (mouseX - pan.x) / zoom;
+    const focusY = (mouseY - pan.y) / zoom;
+
+    // Adjust pan to keep the focus point under the mouse
+    setPan((prevPan) => ({
+      x: mouseX - focusX * newZoom,
+      y: mouseY - focusY * newZoom,
+    }));
+
+    setZoom(newZoom);
   };
+
 
   return (
     <div className="flex flex-col h-screen">
@@ -165,7 +186,7 @@ export default function Home() {
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <Button
           variant="outline"
-          className={tool === 'hand' ? 'bg-accent text-accent-foreground' : ''}
+          active={tool === 'hand'}
           onClick={() => {
             setTool('hand');
             const canvas = canvasRef.current;
@@ -178,7 +199,7 @@ export default function Home() {
         </Button>
         <Button
           variant="outline"
-          className={tool === 'circle' ? 'bg-accent text-accent-foreground' : ''}
+          active={tool === 'circle'}
           onClick={() => {
             setTool('circle');
             const canvas = canvasRef.current;
@@ -207,4 +228,3 @@ export default function Home() {
     </div>
   );
 }
-
