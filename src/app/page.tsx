@@ -23,6 +23,7 @@ export default function Home() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
+  const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
 
   const circleRadius = 25;
 
@@ -97,8 +98,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - circle.x * zoom - pan.x,
-        y: y - circle.y * zoom - pan.y,
+        x: x - clickedCircle.x * zoom - pan.x,
+        y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else if (tool === 'hand') {
@@ -117,7 +118,7 @@ export default function Home() {
     setIsDragging(false);
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'pointer' : 'default';
+      updateCanvasCursor(canvas);
     }
   };
 
@@ -150,6 +151,23 @@ export default function Home() {
         y: y - dragOffset.y,
       });
     }
+
+    if (tool === 'select') {
+      let isOverCircle = false;
+      for (let i = circles.length - 1; i >= 0; i--) {
+        const circle = circles[i];
+        const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
+        if (distance <= circleRadius) {
+          isOverCircle = true;
+          setHoveredCircle(circle.id);
+          break;
+        }
+      }
+      if (!isOverCircle) {
+        setHoveredCircle(null);
+      }
+      updateCanvasCursor(canvas);
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -180,8 +198,16 @@ export default function Home() {
 
   const handleCanvasMouseLeave = () => {
     const canvas = canvasRef.current;
-    if (canvas && tool === 'select') {
-      canvas.style.cursor = 'default';
+    if (canvas) {
+      updateCanvasCursor(canvas);
+    }
+  };
+
+  const updateCanvasCursor = (canvas: HTMLCanvasElement) => {
+    if (tool === 'select') {
+      canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
+    } else {
+      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
   };
 
@@ -201,11 +227,13 @@ export default function Home() {
           onClick={() => {
             setTool('hand');
             setSelectedCircle(null);
+            setHoveredCircle(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'grab';
             }
           }}
+          active={tool === 'hand'}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -215,11 +243,13 @@ export default function Home() {
           onClick={() => {
             setTool('circle');
             setSelectedCircle(null);
+            setHoveredCircle(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'default';
             }
           }}
+          active={tool === 'circle'}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -228,11 +258,13 @@ export default function Home() {
           className={tool === 'select' ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('select');
+            setSelectedCircle(null);
             const canvas = canvasRef.current;
             if (canvas) {
-              canvas.style.cursor = 'pointer';
+              updateCanvasCursor(canvas);
             }
           }}
+          active={tool === 'select'}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
@@ -248,7 +280,7 @@ export default function Home() {
           onMouseMove={handleCanvasMouseMove}
           onMouseLeave={handleCanvasMouseLeave}
           onWheel={handleWheel}
-          style={{ cursor: tool === 'hand' ? 'grab' : tool === 'select' ? 'pointer' : 'default', touchAction: 'none' }}
+          style={{ cursor: tool === 'hand' ? 'grab' : 'default', touchAction: 'none' }}
           className="border border-border shadow-md"
         />
       </div>
