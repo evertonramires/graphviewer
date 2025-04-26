@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Circle, Hand, Plus, MousePointer, X } from 'lucide-react';
+import { Hand, Plus, MousePointer, Trash2, Slash } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete';
@@ -344,7 +344,7 @@ export default function Home() {
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Circle className="h-6 w-6 text-primary" />
+          {/* <Circle className="h-6 w-6 text-primary" /> */}
           <h1 className="text-lg font-semibold">Circle Canvas</h1>
         </div>
       </div>
@@ -399,7 +399,7 @@ export default function Home() {
             setHoveredCircle(null);
           }}
         >
-         Circle
+         <Slash className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
@@ -410,7 +410,7 @@ export default function Home() {
             setHoveredCircle(null);
           }}
         >
-          <X className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
