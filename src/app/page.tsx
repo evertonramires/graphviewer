@@ -186,7 +186,7 @@ export default function Home() {
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <Button
           variant="outline"
-          active={tool === 'hand'}
+          active={(tool === 'hand').toString()}
           onClick={() => {
             setTool('hand');
             const canvas = canvasRef.current;
@@ -199,7 +199,7 @@ export default function Home() {
         </Button>
         <Button
           variant="outline"
-          active={tool === 'circle'}
+          active={(tool === 'circle').toString()}
           onClick={() => {
             setTool('circle');
             const canvas = canvasRef.current;
