@@ -74,7 +74,7 @@ export default function Home() {
       x: x,
       y: y,
     };
-    setCircles([...circles, newCircle]);
+    setCircles(prevCircles => [...prevCircles, newCircle]);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -181,8 +181,8 @@ export default function Home() {
         )
       );
     } else if (tool === 'select' && selectedCircle) {
-      setCircles((prevCircles) =>
-        prevCircles.map((circle) =>
+      setCircles(prevCircles =>
+        prevCircles.map(circle =>
           circle.id === selectedCircle
             ? {
               ...circle,
@@ -359,4 +359,3 @@ export default function Home() {
     </div>
   );
 }
-
