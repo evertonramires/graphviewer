@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Hand, Plus, MousePointer, Trash2, } from 'lucide-react';
+import { Hand, Plus, MousePointer, Trash2, ArrowDownLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { ArrowDownLeft } from 'lucide-react';
 
 type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint';
 
@@ -42,6 +41,7 @@ export default function Home() {
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedCircleCoords, setSelectedCircleCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
   const [paintedCircles, setPaintedCircles] = useState<Set<string>>(new Set());
+  const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
 
   const circleRadius = 25;
 
@@ -73,19 +73,14 @@ export default function Home() {
         const endX = endCircle.x;
         const endY = endCircle.y;
 
-        // Calculate the angle for the start circle
-        const angleStart = Math.atan2(endY - startY, endX - startX);
-        const startXAdjusted = startX + circleRadius * Math.cos(angleStart);
-        const startYAdjusted = startY + circleRadius * Math.sin(angleStart);
-
-        // Calculate the angle for the end circle
-        const angleEnd = Math.atan2(startY - endY, startX - endX);
-        const endXAdjusted = endX + circleRadius * Math.cos(angleEnd);
-        const endYAdjusted = endY + circleRadius * Math.sin(angleEnd);
-
         ctx.beginPath();
-        ctx.moveTo(startXAdjusted, startYAdjusted);
-        ctx.lineTo(endXAdjusted, endYAdjusted);
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        if (paintedEdges.has(edge.id)) {
+          ctx.strokeStyle = 'green'; // Paint edge green if painted
+        } else {
+          ctx.strokeStyle = 'black';
+        }
         ctx.stroke();
       }
     });
@@ -115,7 +110,7 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan, selectedCircle, edges, circleRadius, potentialEdge, paintedCircles]);
+  }, [circles, zoom, pan, selectedCircle, edges, circleRadius, potentialEdge, paintedCircles, paintedEdges]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -198,6 +193,13 @@ export default function Home() {
           newPaintedCircles.delete(clickedCircle.id);
           return newPaintedCircles;
         });
+        setPaintedEdges(prevPaintedEdges => {
+          const newPaintedEdges = new Set(prevPaintedEdges);
+          edges.filter(e => e.start === clickedCircle.id || e.end === clickedCircle.id).forEach(edge => {
+            newPaintedEdges.delete(edge.id);
+          });
+          return newPaintedEdges;
+        });
       } else {
         let clickedEdge: EdgeType | null = null;
         for (let i = edges.length - 1; i >= 0; i--) {
@@ -223,13 +225,19 @@ export default function Home() {
         }
         if (clickedEdge) {
           setEdges(prevEdges => prevEdges.filter(e => e.id !== clickedEdge.id));
+          setPaintedEdges(prevPaintedEdges => {
+            const newPaintedEdges = new Set(prevPaintedEdges);
+            newPaintedEdges.delete(clickedEdge.id);
+            return newPaintedEdges;
+          });
         }
       }
     } else if (tool === 'edge') {
       if (clickedCircle) {
         if (potentialEdge) {
           // Create edge
-          setEdges(prevEdges => [...prevEdges, { id: generateId(), start: potentialEdge, end: clickedCircle.id }]);
+          const newEdge = { id: generateId(), start: potentialEdge, end: clickedCircle.id };
+          setEdges(prevEdges => [...prevEdges, newEdge]);
           setPotentialEdge(null);
           setTool('edge');
         } else {
@@ -249,6 +257,40 @@ export default function Home() {
           }
           return newPaintedCircles;
         });
+      } else {
+        let clickedEdge: EdgeType | null = null;
+        for (let i = edges.length - 1; i >= 0; i--) {
+          const edge = edges[i];
+          const startCircle = circles.find(c => c.id === edge.start);
+          const endCircle = circles.find(c => c.id === edge.end);
+          if (startCircle && endCircle) {
+            const startX = startCircle.x;
+            const startY = startCircle.y;
+            const endX = endCircle.x;
+            const endY = endCircle.y;
+
+            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
+            const b = {x: startX, y: startY};
+            const c = {x: endX, y: endY};
+
+            const distance = pointToLineDistance(a, b, c);
+            if (distance < 5) {
+              clickedEdge = edge;
+              break;
+            }
+          }
+        }
+        if (clickedEdge) {
+          setPaintedEdges(prevPaintedEdges => {
+            const newPaintedEdges = new Set(prevPaintedEdges);
+            if (newPaintedEdges.has(clickedEdge.id)) {
+              newPaintedEdges.delete(clickedEdge.id); // Unpaint if already painted
+            } else {
+              newPaintedEdges.add(clickedEdge.id); // Paint if not already painted
+            }
+            return newPaintedEdges;
+          });
+        }
       }
     }
   };
@@ -560,4 +602,5 @@ export default function Home() {
     </div>
   );
 }
+
 
