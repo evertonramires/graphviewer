@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Circle, Hand, Plus, MousePointer, PenTool } from 'lucide-react';
+import { Circle, Hand, Plus, MousePointer, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete';
 
 interface CircleType {
   id: string;
@@ -170,6 +170,11 @@ export default function Home() {
       }
     } else if (tool === 'circle') {
       canvas.style.cursor = 'default';
+    } else if (tool === 'delete') {
+      if (clickedCircle) {
+        setCircles(prevCircles => prevCircles.filter(c => c.id !== clickedCircle.id));
+        setEdges(prevEdges => prevEdges.filter(e => e.start !== clickedCircle.id && e.end !== clickedCircle.id));
+      }
     } else if (tool === 'edge') {
       if (clickedCircle) {
         if (potentialEdge) {
@@ -332,6 +337,7 @@ export default function Home() {
   const isCircleActive = tool === 'circle';
   const isSelectActive = tool === 'select';
   const isEdgeActive = tool === 'edge';
+  const isDeleteActive = tool === 'delete';
 
 
   return (
@@ -393,7 +399,18 @@ export default function Home() {
             setHoveredCircle(null);
           }}
         >
-          <PenTool className="h-4 w-4" />
+         Circle
+        </Button>
+        <Button
+          variant="outline"
+          className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('delete');
+            setSelectedCircle(null);
+            setHoveredCircle(null);
+          }}
+        >
+          <X className="h-4 w-4" />
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
