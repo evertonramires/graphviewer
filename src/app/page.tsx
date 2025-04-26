@@ -29,7 +29,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<'hand' | 'circle' | 'select' | 'edge'>('hand');
+  const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [edgeStart, setEdgeStart] = useState<string | null>(null);
@@ -130,11 +130,23 @@ export default function Home() {
       }
     }
 
-    if (tool === 'edge') {
-      if (clickedCircle) {
-        if (!edgeStart) {
+    setIsDragging(true);
+    setDragOffset({
+      x: x - pan.x,
+      y: y - pan.y,
+    });
+
+    if (tool === 'select') {
+      if (!edgeStart) {
+        if (clickedCircle) {
           setEdgeStart(clickedCircle.id);
+          setSelectedCircle(clickedCircle.id);
+          canvas.style.cursor = 'pointer';
         } else {
+          canvas.style.cursor = 'grab';
+        }
+      } else {
+        if (clickedCircle) {
           if (clickedCircle.id !== edgeStart) {
             const newEdge = {
               id: generateId(),
@@ -143,19 +155,20 @@ export default function Home() {
             };
             setEdges([...edges, newEdge]);
             setEdgeStart(null);
+            setSelectedCircle(null);
+            canvas.style.cursor = 'grab';
           } else {
             setEdgeStart(null);
+            setSelectedCircle(null);
+            canvas.style.cursor = 'grab';
           }
+        } else {
+          setEdgeStart(null);
+          setSelectedCircle(null);
+          canvas.style.cursor = 'grab';
         }
       }
-      return;
     }
-
-    setIsDragging(true);
-    setDragOffset({
-      x: x - pan.x,
-      y: y - pan.y,
-    });
 
     if (tool === 'circle' && clickedCircle) {
       setSelectedCircle(clickedCircle.id);
@@ -164,10 +177,11 @@ export default function Home() {
         y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
-    } else if (tool === 'hand' || (tool === 'select' && !clickedCircle)) {
+    }  else if (tool === 'hand' || (tool === 'select' && !clickedCircle)) {
       canvas.style.cursor = 'grab';
     } else if (tool === 'select' && clickedCircle) {
       setSelectedCircle(clickedCircle.id);
+      canvas.style.cursor = 'pointer';
     }
   };
 
@@ -260,7 +274,11 @@ export default function Home() {
     }
 
     if (tool === 'select') {
-      canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
+      if (edgeStart) {
+        canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
+      } else {
+        canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
+      }
     } else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
@@ -302,7 +320,7 @@ export default function Home() {
     } else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
-  }, [tool, circles, pan, zoom]);
+  }, [tool, circles, pan, zoom, edgeStart]);
 
 
   return (
@@ -360,19 +378,6 @@ export default function Home() {
           active={(tool === 'select').toString()}
         >
           <MousePointer className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          className={tool === 'edge' ? 'bg-accent text-accent-foreground' : ''}
-          onClick={() => {
-            setTool('edge');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
-            setEdgeStart(null);
-          }}
-          active={(tool === 'edge').toString()}
-        >
-          Edge
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
