@@ -10,26 +10,19 @@ interface CircleType {
   y: number;
 }
 
-interface EdgeType {
-  id: string;
-  start: string;
-  end: string;
-}
-
 const generateId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
 export default function Home() {
   const [circles, setCircles] = useState<CircleType[]>([]);
-  const [edges, setEdges] = useState<EdgeType[]>([]);
   const [selectedCircle, setSelectedCircle] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
+  const [tool, setTool] = useState<'hand' | 'circle' | 'select' | 'edge'>('hand');
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [edgeStart, setEdgeStart] = useState<string | null>(null);
@@ -53,21 +46,6 @@ export default function Home() {
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
-    // Draw edges
-    edges.forEach((edge) => {
-      const startCircle = circles.find((c) => c.id === edge.start);
-      const endCircle = circles.find((c) => c.id === edge.end);
-
-      if (startCircle && endCircle) {
-        ctx.beginPath();
-        ctx.moveTo(startCircle.x, startCircle.y);
-        ctx.lineTo(endCircle.x, endCircle.y);
-        ctx.strokeStyle = 'black';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    });
-
     // Then draw circles
     circles.forEach((circle) => {
       ctx.beginPath();
@@ -80,7 +58,7 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan, selectedCircle, edges]);
+  }, [circles, zoom, pan, selectedCircle]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -136,40 +114,68 @@ export default function Home() {
       y: y - pan.y,
     });
 
+    if (tool === 'hand') {
+      canvas.style.cursor = 'grab';
+    }
     if (tool === 'select') {
-      if (!edgeStart) {
-        if (clickedCircle) {
-          setEdgeStart(clickedCircle.id);
-          setSelectedCircle(clickedCircle.id);
-          canvas.style.cursor = 'pointer';
-        } else {
-          canvas.style.cursor = 'grab';
-        }
+      if (clickedCircle) {
+        setSelectedCircle(clickedCircle.id);
+        canvas.style.cursor = 'pointer';
       } else {
-        if (clickedCircle) {
-          if (clickedCircle.id !== edgeStart) {
-            const newEdge = {
-              id: generateId(),
-              start: edgeStart,
-              end: clickedCircle.id,
-            };
-            setEdges([...edges, newEdge]);
-            setEdgeStart(null);
-            setSelectedCircle(null);
+        canvas.style.cursor = 'grab';
+      }
+    }
+    if (tool === 'edge') {
+        if (!edgeStart) {
+          if (clickedCircle) {
+            setEdgeStart(clickedCircle.id);
+            setSelectedCircle(clickedCircle.id);
+            canvas.style.cursor = 'pointer';
+          } else {
             canvas.style.cursor = 'grab';
+          }
+        } else {
+          if (clickedCircle) {
+            if (clickedCircle.id !== edgeStart) {
+              //Draw edge
+              const startCircle = circles.find((c) => c.id === edgeStart);
+              const endCircle = circles.find((c) => c.id === clickedCircle.id);
+        
+              if (startCircle && endCircle && canvasRef.current) {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext("2d");
+                if (!ctx) return;
+                ctx.save();
+
+                // Apply pan and zoom
+                ctx.translate(pan.x, pan.y);
+                ctx.scale(zoom, zoom);
+                
+                ctx.beginPath();
+                ctx.moveTo(startCircle.x, startCircle.y);
+                ctx.lineTo(endCircle.x, endCircle.y);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.restore();
+              }
+              
+              setEdgeStart(null);
+              setSelectedCircle(null);
+              canvas.style.cursor = 'grab';
+            } else {
+              setEdgeStart(null);
+              setSelectedCircle(null);
+              canvas.style.cursor = 'grab';
+            }
           } else {
             setEdgeStart(null);
             setSelectedCircle(null);
             canvas.style.cursor = 'grab';
           }
-        } else {
-          setEdgeStart(null);
-          setSelectedCircle(null);
-          canvas.style.cursor = 'grab';
         }
       }
-    }
-
     if (tool === 'circle' && clickedCircle) {
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
@@ -177,11 +183,6 @@ export default function Home() {
         y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
-    }  else if (tool === 'hand' || (tool === 'select' && !clickedCircle)) {
-      canvas.style.cursor = 'grab';
-    } else if (tool === 'select' && clickedCircle) {
-      setSelectedCircle(clickedCircle.id);
-      canvas.style.cursor = 'pointer';
     }
   };
 
@@ -212,8 +213,9 @@ export default function Home() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (isMiddleClicking || (tool === 'hand') || (tool === 'select' && !hoveredCircle)) {
+    if (isMiddleClicking || (tool === 'hand')) {
       // Panning the canvas
+      canvas.style.cursor = 'grabbing';
       setPan({
         x: x - dragOffset.x,
         y: y - dragOffset.y,
@@ -230,6 +232,24 @@ export default function Home() {
             : circle
         )
       );
+    } else if (tool === 'select' && selectedCircle) {
+      setCircles((prevCircles) =>
+        prevCircles.map((circle) =>
+          circle.id === selectedCircle
+            ? {
+              ...circle,
+              x: (x - dragOffset.x - pan.x) / zoom,
+              y: (y - dragOffset.y - pan.y) / zoom,
+            }
+            : circle
+        )
+      );
+    } else {
+        canvas.style.cursor = 'grab';
+        setPan({
+          x: x - dragOffset.x,
+          y: y - dragOffset.y,
+        });
     }
   };
 
@@ -274,11 +294,12 @@ export default function Home() {
     }
 
     if (tool === 'select') {
-      if (edgeStart) {
         canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
-      } else {
+    } else {
+      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
+    }
+    if (tool === 'edge') {
         canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
-      }
     } else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
@@ -320,7 +341,39 @@ export default function Home() {
     } else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
-  }, [tool, circles, pan, zoom, edgeStart]);
+    if (tool === 'edge') {
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        let isOverCircle = false;
+        for (let i = circles.length - 1; i >= 0; i--) {
+          const circle = circles[i];
+          const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
+          if (distance <= circleRadius) {
+            isOverCircle = true;
+            setHoveredCircle(circle.id);
+            canvas.style.cursor = 'pointer';
+            break;
+          }
+        }
+        if (!isOverCircle) {
+          setHoveredCircle(null);
+          canvas.style.cursor = 'grab';
+        }
+      };
+
+      canvas.addEventListener('mousemove', handleMouseMove);
+
+      return () => {
+        canvas.removeEventListener('mousemove', handleMouseMove);
+        canvas.style.cursor = 'default';
+      };
+    } else {
+      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
+    }
+  }, [tool, circles, pan, zoom]);
 
 
   return (
@@ -376,6 +429,19 @@ export default function Home() {
             setEdgeStart(null);
           }}
           active={(tool === 'select').toString()}
+        >
+          <MousePointer className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className={tool === 'edge' ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('edge');
+            setSelectedCircle(null);
+            setHoveredCircle(null);
+            setEdgeStart(null);
+          }}
+          active={(tool === 'edge').toString()}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
