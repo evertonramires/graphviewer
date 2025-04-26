@@ -98,8 +98,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - circle.x * zoom - pan.x,
-        y: y - circle.y * zoom - pan.y,
+        x: x - clickedCircle.x * zoom - pan.x,
+        y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else if (tool === 'hand') {
@@ -151,23 +151,6 @@ export default function Home() {
         y: y - dragOffset.y,
       });
     }
-
-    if (tool === 'select') {
-      let isOverCircle = false;
-      for (let i = circles.length - 1; i >= 0; i--) {
-        const circle = circles[i];
-        const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-        if (distance <= circleRadius) {
-          isOverCircle = true;
-          setHoveredCircle(circle.id);
-          break;
-        }
-      }
-      if (!isOverCircle) {
-        setHoveredCircle(null);
-      }
-      updateCanvasCursor(canvas);
-    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -210,6 +193,44 @@ export default function Home() {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
   };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (tool === 'select') {
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        let isOverCircle = false;
+        for (let i = circles.length - 1; i >= 0; i--) {
+          const circle = circles[i];
+          const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
+          if (distance <= circleRadius) {
+            isOverCircle = true;
+            setHoveredCircle(circle.id);
+            canvas.style.cursor = 'pointer';
+            break;
+          }
+        }
+        if (!isOverCircle) {
+          setHoveredCircle(null);
+          canvas.style.cursor = 'grab';
+        }
+      };
+
+      canvas.addEventListener('mousemove', handleMouseMove);
+
+      return () => {
+        canvas.removeEventListener('mousemove', handleMouseMove);
+        canvas.style.cursor = 'default';
+      };
+    } else {
+      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
+    }
+  }, [tool, circles, pan, zoom]);
 
 
   return (
@@ -259,10 +280,6 @@ export default function Home() {
           onClick={() => {
             setTool('select');
             setSelectedCircle(null);
-            const canvas = canvasRef.current;
-            if (canvas) {
-              updateCanvasCursor(canvas);
-            }
           }}
           active={(tool === 'select').toString()}
         >
@@ -280,7 +297,7 @@ export default function Home() {
           onMouseMove={handleCanvasMouseMove}
           onMouseLeave={handleCanvasMouseLeave}
           onWheel={handleWheel}
-          style={{ cursor: tool === 'hand' ? 'grab' : 'default', touchAction: 'none' }}
+          style={{ touchAction: 'none' }}
           className="border border-border shadow-md"
         />
       </div>
