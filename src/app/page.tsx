@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Hand, Plus, MousePointer, Trash2, Slash } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint';
 
 interface CircleType {
   id: string;
@@ -39,6 +39,7 @@ export default function Home() {
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedCircleCoords, setSelectedCircleCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
+  const [paintedCircles, setPaintedCircles] = useState<Set<string>>(new Set());
 
   const circleRadius = 25;
 
@@ -80,6 +81,10 @@ export default function Home() {
       ctx.fill();
       ctx.strokeStyle = selectedCircle === circle.id || potentialEdge === circle.id ? 'teal' : 'black'; // Highlight selected circle
       ctx.lineWidth = selectedCircle === circle.id || potentialEdge === circle.id ? 3 : 1;
+      if (paintedCircles.has(circle.id)) {
+        ctx.strokeStyle = 'green'; // Paint perimeter green if painted
+        ctx.lineWidth = 3;
+      }
       ctx.stroke();
       ctx.lineWidth = 1;
 
@@ -93,7 +98,7 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan, selectedCircle, edges, circleRadius, potentialEdge]);
+  }, [circles, zoom, pan, selectedCircle, edges, circleRadius, potentialEdge, paintedCircles]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -162,10 +167,6 @@ export default function Home() {
         });
         canvas.style.cursor = 'grabbing';
       } else {
-        setPan({
-          x: x - dragOffset.x,
-          y: y - dragOffset.y,
-        });
         canvas.style.cursor = 'grab';
       }
     } else if (tool === 'circle') {
@@ -174,6 +175,29 @@ export default function Home() {
       if (clickedCircle) {
         setCircles(prevCircles => prevCircles.filter(c => c.id !== clickedCircle.id));
         setEdges(prevEdges => prevEdges.filter(e => e.start !== clickedCircle.id && e.end !== clickedCircle.id));
+        setPaintedCircles(prevPaintedCircles => {
+          const newPaintedCircles = new Set(prevPaintedCircles);
+          newPaintedCircles.delete(clickedCircle.id);
+          return newPaintedCircles;
+        });
+      } else {
+        let clickedEdge: EdgeType | null = null;
+        for (let i = edges.length - 1; i >= 0; i--) {
+          const edge = edges[i];
+          const startCircle = circles.find(c => c.id === edge.start);
+          const endCircle = circles.find(c => c.id === edge.end);
+          if (startCircle && endCircle) {
+            // Basic line hit detection (improve if needed)
+            const distance = Math.abs((endCircle.y - startCircle.y) * x - (endCircle.x - startCircle.x) * y + endCircle.x * startCircle.y - endCircle.y * startCircle.x) / Math.sqrt((endCircle.y - startCircle.y) ** 2 + (endCircle.x - startCircle.x) ** 2);
+            if (distance < 5) {
+              clickedEdge = edge;
+              break;
+            }
+          }
+        }
+        if (clickedEdge) {
+          setEdges(prevEdges => prevEdges.filter(e => e.id !== clickedEdge.id));
+        }
       }
     } else if (tool === 'edge') {
       if (clickedCircle) {
@@ -181,11 +205,23 @@ export default function Home() {
           // Create edge
           setEdges(prevEdges => [...prevEdges, { id: generateId(), start: potentialEdge, end: clickedCircle.id }]);
           setPotentialEdge(null);
-          setTool('edge');
+          setTool('select');
         } else {
           // Start edge
           setPotentialEdge(clickedCircle.id);
         }
+      }
+    } else if (tool === 'paint') {
+      if (clickedCircle) {
+        setPaintedCircles(prevPaintedCircles => {
+          const newPaintedCircles = new Set(prevPaintedCircles);
+          if (newPaintedCircles.has(clickedCircle.id)) {
+            newPaintedCircles.delete(clickedCircle.id); // Unpaint if already painted
+          } else {
+            newPaintedCircles.add(clickedCircle.id); // Paint if not already painted
+          }
+          return newPaintedCircles;
+        });
       }
     }
   };
@@ -338,6 +374,7 @@ export default function Home() {
   const isSelectActive = tool === 'select';
   const isEdgeActive = tool === 'edge';
   const isDeleteActive = tool === 'delete';
+  const isPaintActive = tool === 'paint';
 
 
   return (
@@ -411,6 +448,33 @@ export default function Home() {
           }}
         >
           <Trash2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('paint');
+            setSelectedCircle(null);
+            setHoveredCircle(null);
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-paint-bucket"
+          >
+            <path d="M3 6v14c0 .6.4 1 1 1h16c.6 0 1-.4 1-1V6c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1Z" />
+            <path d="M8 5a2 2 0 0 1 4 0c0 2-3 2-4 0" />
+            <path d="M6 5H5c-.6 0-1 .4-1 1v4" />
+            <path d="M18 5h1c.6 0 1 .4 1 1v4" />
+          </svg>
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
