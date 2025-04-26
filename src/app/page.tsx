@@ -206,7 +206,6 @@ export default function Home() {
               canvas.style.cursor = 'grab';
             }
           }}
-          active={tool === 'hand'}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -221,7 +220,6 @@ export default function Home() {
               canvas.style.cursor = 'default';
             }
           }}
-          active={tool === 'circle'}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -235,7 +233,6 @@ export default function Home() {
               canvas.style.cursor = 'pointer';
             }
           }}
-          active={tool === 'select'}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
