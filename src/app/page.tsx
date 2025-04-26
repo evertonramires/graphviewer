@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Hand, Plus, MousePointer, Trash2, Slash } from 'lucide-react';
+import { Hand, Plus, MousePointer, Trash2, } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { ArrowDownLeft } from 'lucide-react';
 
 type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint';
 
@@ -11,6 +12,7 @@ interface CircleType {
   x: number;
   y: number;
   label: string;
+  text: string;
 }
 
 interface EdgeType {
@@ -66,9 +68,24 @@ export default function Home() {
       const endCircle = circles.find(c => c.id === edge.end);
 
       if (startCircle && endCircle) {
+        const startX = startCircle.x;
+        const startY = startCircle.y;
+        const endX = endCircle.x;
+        const endY = endCircle.y;
+
+        // Calculate the angle for the start circle
+        const angleStart = Math.atan2(endY - startY, endX - startX);
+        const startXAdjusted = startX + circleRadius * Math.cos(angleStart);
+        const startYAdjusted = startY + circleRadius * Math.sin(angleStart);
+
+        // Calculate the angle for the end circle
+        const angleEnd = Math.atan2(startY - endY, startX - endX);
+        const endXAdjusted = endX + circleRadius * Math.cos(angleEnd);
+        const endYAdjusted = endY + circleRadius * Math.sin(angleEnd);
+
         ctx.beginPath();
-        ctx.moveTo(startCircle.x, startCircle.y);
-        ctx.lineTo(endCircle.x, endCircle.y);
+        ctx.moveTo(startXAdjusted, startYAdjusted);
+        ctx.lineTo(endXAdjusted, endYAdjusted);
         ctx.stroke();
       }
     });
@@ -79,8 +96,8 @@ export default function Home() {
       ctx.arc(circle.x, circle.y, circleRadius, 0, 2 * Math.PI);
       ctx.fillStyle = 'white';
       ctx.fill();
-      ctx.strokeStyle = selectedCircle === circle.id || potentialEdge === circle.id ? 'teal' : 'black'; // Highlight selected circle
-      ctx.lineWidth = selectedCircle === circle.id || potentialEdge === circle.id ? 3 : 1;
+      ctx.strokeStyle = selectedCircle === circle.id ? 'teal' : 'black'; // Highlight selected circle
+      ctx.lineWidth = selectedCircle === circle.id ? 3 : 1;
       if (paintedCircles.has(circle.id)) {
         ctx.strokeStyle = 'green'; // Paint perimeter green if painted
         ctx.lineWidth = 3;
@@ -93,7 +110,7 @@ export default function Home() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = '16px sans-serif';
-      ctx.fillText(circle.label, circle.x, circle.y);
+      ctx.fillText(circle.text, circle.x, circle.y);
     });
 
     // Restore the transformation matrix
@@ -115,6 +132,7 @@ export default function Home() {
       x: x,
       y: y,
       label: alphabet[circles.length % alphabet.length],
+      text: alphabet[circles.length % alphabet.length],
     };
     setCircles(prevCircles => [...prevCircles, newCircle]);
   };
@@ -187,8 +205,16 @@ export default function Home() {
           const startCircle = circles.find(c => c.id === edge.start);
           const endCircle = circles.find(c => c.id === edge.end);
           if (startCircle && endCircle) {
-            // Basic line hit detection (improve if needed)
-            const distance = Math.abs((endCircle.y - startCircle.y) * x - (endCircle.x - startCircle.x) * y + endCircle.x * startCircle.y - endCircle.y * startCircle.x) / Math.sqrt((endCircle.y - startCircle.y) ** 2 + (endCircle.x - startCircle.x) ** 2);
+            const startX = startCircle.x;
+            const startY = startCircle.y;
+            const endX = endCircle.x;
+            const endY = endCircle.y;
+
+            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
+            const b = {x: startX, y: startY};
+            const c = {x: endX, y: endY};
+
+            const distance = pointToLineDistance(a, b, c);
             if (distance < 5) {
               clickedEdge = edge;
               break;
@@ -205,10 +231,11 @@ export default function Home() {
           // Create edge
           setEdges(prevEdges => [...prevEdges, { id: generateId(), start: potentialEdge, end: clickedCircle.id }]);
           setPotentialEdge(null);
-          setTool('select');
+          setTool('edge');
         } else {
           // Start edge
           setPotentialEdge(clickedCircle.id);
+          setSelectedCircle(clickedCircle.id);
         }
       }
     } else if (tool === 'paint') {
@@ -224,6 +251,32 @@ export default function Home() {
         });
       }
     }
+  };
+
+  const pointToLineDistance = (point: { x: number, y: number }, lineStart: { x: number, y: number }, lineEnd: { x: number, y: number }): number => {
+    const dx = lineEnd.x - lineStart.x;
+    const dy = lineEnd.y - lineStart.y;
+
+    if (dx === 0 && dy === 0) {
+        // It's a point, treat as distance to lineStart
+        return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+    }
+
+    const t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (dx ** 2 + dy ** 2);
+
+    // If t is outside the segment, find distance to closest endpoint
+    if (t < 0) {
+        return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+    }
+    if (t > 1) {
+        return Math.sqrt((point.x - lineEnd.x) ** 2 + (point.y - lineEnd.y) ** 2);
+    }
+
+    // Otherwise, get the closest point on the line segment and calculate distance
+    const closestX = lineStart.x + t * dx;
+    const closestY = lineStart.y + t * dy;
+
+    return Math.sqrt((point.x - closestX) ** 2 + (point.y - closestY) ** 2);
   };
 
   const handleCanvasMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -436,7 +489,7 @@ export default function Home() {
             setHoveredCircle(null);
           }}
         >
-         <Slash className="h-4 w-4" />
+         <ArrowDownLeft className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
@@ -464,7 +517,7 @@ export default function Home() {
             height="24"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
+            stroke="green"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -507,3 +560,4 @@ export default function Home() {
     </div>
   );
 }
+
