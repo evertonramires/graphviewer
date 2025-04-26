@@ -31,6 +31,8 @@ export default function Home() {
   const [isDrawingLine, setIsDrawingLine] = useState(false);
   const [lineStartCircle, setLineStartCircle] = useState<string | null>(null);
 
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -38,7 +40,14 @@ export default function Home() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Save the current transformation matrix
+    ctx.save();
+
+    // Apply pan and zoom
+    ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
     // Draw lines first
@@ -62,15 +71,18 @@ export default function Home() {
       ctx.fill();
       ctx.stroke();
     });
-  }, [circles, zoom, circleRadius, circleColor, lines]);
+
+    // Restore the transformation matrix
+    ctx.restore();
+  }, [circles, zoom, circleRadius, circleColor, lines, pan]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
+    const x = (e.clientX - rect.left - pan.x) / zoom;
+    const y = (e.clientY - rect.top - pan.y) / zoom;
 
     let clickedCircle: CircleType | null = null;
     for (let i = circles.length - 1; i >= 0; i--) {
@@ -138,15 +150,40 @@ export default function Home() {
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDragging(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-    canvas.style.cursor = 'grabbing';
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    let clickedCircle: CircleType | null = null;
+    for (let i = circles.length - 1; i >= 0; i--) {
+      const circle = circles[i];
+      const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
+      if (distance <= circle.radius * zoom) {
+        clickedCircle = circle;
+        break;
+      }
+    }
+
+    if (clickedCircle) {
+      setIsDragging(true);
+      setSelectedCircle(clickedCircle.id);
+      setDragOffset({
+        x: x - circle.x * zoom - pan.x,
+        y: y - circle.y * zoom - pan.y,
+      });
+      canvas.style.cursor = 'grabbing';
+    } else {
+      setIsDragging(true);
+      setSelectedCircle(null);
+      setDragOffset({
+        x: x - pan.x,
+        y: y - pan.y,
+      });
+      canvas.style.cursor = 'grab';
+    }
   };
 
   const handleCanvasMouseUp = () => {
@@ -158,21 +195,36 @@ export default function Home() {
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !selectedCircle) return;
+    if (!isDragging) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left - dragOffset.x) / zoom;
-    const y = (e.clientY - rect.top - dragOffset.y) / zoom;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    setCircles((prevCircles) =>
-      prevCircles.map((circle) =>
-        circle.id === selectedCircle ? { ...circle, x: x, y: y } : circle
-      )
-    );
+    if (selectedCircle) {
+      setCircles((prevCircles) =>
+        prevCircles.map((circle) =>
+          circle.id === selectedCircle
+            ? {
+              ...circle,
+              x: (x - dragOffset.x - pan.x) / zoom,
+              y: (y - dragOffset.y - pan.y) / zoom,
+            }
+            : circle
+        )
+      );
+    } else {
+      // Panning the canvas
+      setPan({
+        x: x - dragOffset.x,
+        y: y - dragOffset.y,
+      });
+    }
   };
+
 
   const handleCircleDelete = () => {
     if (selectedCircle) {
@@ -246,7 +298,7 @@ export default function Home() {
           </Button>
         </div>
       </div>
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
           width={800}
