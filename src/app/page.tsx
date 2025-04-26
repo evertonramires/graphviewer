@@ -2,16 +2,14 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
 import { Circle } from 'lucide-react';
+import { Slider } from "@/components/ui/slider";
 
 interface CircleType {
   id: string;
   x: number;
   y: number;
   radius: number;
-  color: string;
 }
 
 const generateId = () => {
@@ -21,8 +19,6 @@ const generateId = () => {
 export default function Home() {
   const [circles, setCircles] = useState<CircleType[]>([]);
   const [selectedCircle, setSelectedCircle] = useState<string | null>(null);
-  const [circleRadius, setCircleRadius] = useState(50);
-  const [circleColor, setCircleColor] = useState("#008080");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
@@ -32,6 +28,8 @@ export default function Home() {
   const [lineStartCircle, setLineStartCircle] = useState<string | null>(null);
 
   const [pan, setPan] = useState({ x: 0, y: 0 });
+
+  const circleRadius = 25;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -67,14 +65,13 @@ export default function Home() {
     circles.forEach((circle) => {
       ctx.beginPath();
       ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
-      ctx.fillStyle = circle.color;
-      ctx.fill();
+      ctx.fillStyle = 'transparent';
       ctx.stroke();
     });
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, circleRadius, circleColor, lines, pan]);
+  }, [circles, zoom, lines, pan]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -116,32 +113,9 @@ export default function Home() {
           x: x,
           y: y,
           radius: circleRadius,
-          color: circleColor,
         };
         setCircles([...circles, newCircle]);
       }
-    }
-  };
-
-  const handleRadiusChange = (value: number[]) => {
-    setCircleRadius(value[0]);
-    if (selectedCircle) {
-      setCircles((prevCircles) =>
-        prevCircles.map((circle) =>
-          circle.id === selectedCircle ? { ...circle, radius: value[0] } : circle
-        )
-      );
-    }
-  };
-
-  const handleColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCircleColor(e.target.value);
-    if (selectedCircle) {
-      setCircles((prevCircles) =>
-        prevCircles.map((circle) =>
-          circle.id === selectedCircle ? { ...circle, color: e.target.value } : circle
-        )
-      );
     }
   };
 
@@ -226,15 +200,6 @@ export default function Home() {
   };
 
 
-  const handleCircleDelete = () => {
-    if (selectedCircle) {
-      setCircles((prevCircles) =>
-        prevCircles.filter((circle) => circle.id !== selectedCircle)
-      );
-      setSelectedCircle(null);
-    }
-  };
-
   const handleStartLine = () => {
     if (selectedCircle) {
       setIsDrawingLine(true);
@@ -250,32 +215,6 @@ export default function Home() {
           <h1 className="text-lg font-semibold">Circle Canvas</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <div>
-            <label htmlFor="radius" className="block text-sm font-medium text-foreground">
-              Radius: {circleRadius}
-            </label>
-            <Slider
-              id="radius"
-              defaultValue={[circleRadius]}
-              min={10}
-              max={100}
-              step={1}
-              onValueChange={handleRadiusChange}
-              className="w-32"
-            />
-          </div>
-          <div>
-            <label htmlFor="colorPicker" className="block text-sm font-medium text-foreground">
-              Color:
-            </label>
-            <Input
-              type="color"
-              id="colorPicker"
-              value={circleColor}
-              onChange={handleColorChange}
-              className="w-24 h-10"
-            />
-          </div>
           <div>
             <label htmlFor="zoom" className="block text-sm font-medium text-foreground">
               Zoom: {zoom.toFixed(1)}x
@@ -293,16 +232,13 @@ export default function Home() {
           <Button onClick={handleStartLine} disabled={isDrawingLine || !selectedCircle}>
             {isDrawingLine ? "Drawing Line..." : "Draw Line"}
           </Button>
-          <Button variant="destructive" size="sm" onClick={handleCircleDelete} disabled={!selectedCircle}>
-            Delete Circle
-          </Button>
         </div>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
-          width={800}
-          height={600}
+          width={1600}
+          height={1200}
           onClick={handleCanvasClick}
           onMouseDown={handleCanvasMouseDown}
           onMouseUp={handleCanvasMouseUp}
