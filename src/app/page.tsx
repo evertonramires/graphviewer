@@ -10,6 +10,7 @@ interface CircleType {
   id: string;
   x: number;
   y: number;
+  label: string;
 }
 
 interface EdgeType {
@@ -22,6 +23,8 @@ const generateId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
+const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
 export default function Home() {
   const [circles, setCircles] = useState<CircleType[]>([]);
   const [edges, setEdges] = useState<EdgeType[]>([]);
@@ -32,7 +35,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<ToolType>('select');
+  const [tool, setTool] = useState<ToolType>('circle');
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedCircleCoords, setSelectedCircleCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
@@ -79,6 +82,13 @@ export default function Home() {
       ctx.lineWidth = selectedCircle === circle.id || potentialEdge === circle.id ? 3 : 1;
       ctx.stroke();
       ctx.lineWidth = 1;
+
+      // Draw label
+      ctx.fillStyle = 'black';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '16px sans-serif';
+      ctx.fillText(circle.label, circle.x, circle.y);
     });
 
     // Restore the transformation matrix
@@ -99,6 +109,7 @@ export default function Home() {
       id: generateId(),
       x: x,
       y: y,
+      label: alphabet[circles.length % alphabet.length],
     };
     setCircles(prevCircles => [...prevCircles, newCircle]);
   };
@@ -344,7 +355,6 @@ export default function Home() {
               canvas.style.cursor = 'grab';
             }
           }}
-          active={isHandActive.toString()}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -360,7 +370,6 @@ export default function Home() {
               canvas.style.cursor = 'default';
             }
           }}
-          active={isCircleActive.toString()}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -372,7 +381,6 @@ export default function Home() {
             setSelectedCircle(null);
             setHoveredCircle(null);
           }}
-          active={isSelectActive.toString()}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
@@ -384,7 +392,6 @@ export default function Home() {
             setSelectedCircle(null);
             setHoveredCircle(null);
           }}
-          active={isEdgeActive.toString()}
         >
           <PenTool className="h-4 w-4" />
         </Button>
