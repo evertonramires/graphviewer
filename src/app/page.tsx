@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Circle } from 'lucide-react';
 
 interface CircleType {
@@ -21,9 +20,6 @@ export default function Home() {
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [lines, setLines] = useState<[string, string][]>([]);
-  const [isDrawingLine, setIsDrawingLine] = useState(false);
-  const [lineStartCircle, setLineStartCircle] = useState<string | null>(null);
 
   const [pan, setPan] = useState({ x: 0, y: 0 });
 
@@ -46,19 +42,6 @@ export default function Home() {
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
-    // Draw lines first
-    lines.forEach(([startId, endId]) => {
-      const startCircle = circles.find((c) => c.id === startId);
-      const endCircle = circles.find((c) => c.id === endId);
-
-      if (startCircle && endCircle) {
-        ctx.beginPath();
-        ctx.moveTo(startCircle.x, startCircle.y);
-        ctx.lineTo(endCircle.x, endCircle.y);
-        ctx.stroke();
-      }
-    });
-
     // Then draw circles
     circles.forEach((circle) => {
       ctx.beginPath();
@@ -69,7 +52,7 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, lines, pan]);
+  }, [circles, zoom, pan]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -89,30 +72,16 @@ export default function Home() {
       }
     }
 
-    if (isDrawingLine) {
-      if (clickedCircle) {
-        // End line drawing
-        if (lineStartCircle && lineStartCircle !== clickedCircle.id) {
-          setLines([...lines, [lineStartCircle, clickedCircle.id]]);
-        }
-        setIsDrawingLine(false);
-        setLineStartCircle(null);
-      } else {
-        setIsDrawingLine(false);
-        setLineStartCircle(null);
-      }
+    if (clickedCircle) {
+      setSelectedCircle(clickedCircle.id);
     } else {
-      if (clickedCircle) {
-        setSelectedCircle(clickedCircle.id);
-      } else {
-        setSelectedCircle(null);
-        const newCircle = {
-          id: generateId(),
-          x: x,
-          y: y,
-        };
-        setCircles([...circles, newCircle]);
-      }
+      setSelectedCircle(null);
+      const newCircle = {
+        id: generateId(),
+        x: x,
+        y: y,
+      };
+      setCircles([...circles, newCircle]);
     }
   };
 
@@ -128,7 +97,7 @@ export default function Home() {
     for (let i = circles.length - 1; i >= 0; i--) {
       const circle = circles[i];
       const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-      if (distance <= circleRadius * zoom) {
+      if (distance <= circleRadius) {
         clickedCircle = circle;
         break;
       }
@@ -138,8 +107,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - clickedCircle.x * zoom - pan.x,
-        y: y - clickedCircle.y * zoom - pan.y,
+        x: x - circle.x * zoom - pan.x,
+        y: y - circle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else {
@@ -192,12 +161,10 @@ export default function Home() {
     }
   };
 
-
-  const handleStartLine = () => {
-    if (selectedCircle) {
-      setIsDrawingLine(true);
-      setLineStartCircle(selectedCircle);
-    }
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom((prevZoom) => Math.max(0.1, Math.min(3, prevZoom + delta)));
   };
 
   return (
@@ -206,11 +173,6 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <Circle className="h-6 w-6 text-primary" />
           <h1 className="text-lg font-semibold">Circle Canvas</h1>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button onClick={handleStartLine} disabled={isDrawingLine || !selectedCircle}>
-            {isDrawingLine ? "Drawing Line..." : "Draw Line"}
-          </Button>
         </div>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -222,7 +184,8 @@ export default function Home() {
           onMouseDown={handleCanvasMouseDown}
           onMouseUp={handleCanvasMouseUp}
           onMouseMove={handleCanvasMouseMove}
-          style={{ cursor: 'default', touchAction: 'none' }}
+          onWheel={handleWheel}
+          style={{ cursor: 'grab', touchAction: 'none' }}
           className="border border-border shadow-md"
         />
       </div>
