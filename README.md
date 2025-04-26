@@ -1,5 +1,3 @@
-# Firebase Studio
+# Graph Viewer
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+This is a simple canva to visualize graphs made with firebase studio. The main goal is to help students learn graph theory.
