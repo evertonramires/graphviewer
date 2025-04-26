@@ -94,20 +94,20 @@ export default function Home() {
       }
     }
 
+    setIsDragging(true);
+    setDragOffset({
+      x: x - pan.x,
+      y: y - pan.y,
+    });
+
     if (tool === 'circle' && clickedCircle) {
-      setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
         x: x - clickedCircle.x * zoom - pan.x,
         y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
-    } else if (tool === 'hand') {
-      setIsDragging(true);
-      setDragOffset({
-        x: x - pan.x,
-        y: y - pan.y,
-      });
+    } else if (tool === 'hand' || (tool === 'select' && !clickedCircle)) {
       canvas.style.cursor = 'grab';
     } else if (tool === 'select' && clickedCircle) {
       setSelectedCircle(clickedCircle.id);
@@ -144,7 +144,7 @@ export default function Home() {
             : circle
         )
       );
-    } else if (tool === 'hand') {
+    } else if (tool === 'hand' || (tool === 'select' && !hoveredCircle)) {
       // Panning the canvas
       setPan({
         x: x - dragOffset.x,
@@ -297,7 +297,7 @@ export default function Home() {
           onMouseMove={handleCanvasMouseMove}
           onMouseLeave={handleCanvasMouseLeave}
           onWheel={handleWheel}
-          style={{ touchAction: 'none' }}
+          style={{ touchAction: 'none', cursor: 'default' }}
           className="border border-border shadow-md"
         />
       </div>
