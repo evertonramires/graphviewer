@@ -97,8 +97,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - clickedCircle.x * zoom - pan.x,
-        y: y - clickedCircle.y * zoom - pan.y,
+        x: x - circle.x * zoom - pan.x,
+        y: y - circle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else if (tool === 'hand') {
@@ -117,7 +117,7 @@ export default function Home() {
     setIsDragging(false);
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
+      canvas.style.cursor = tool === 'hand' ? 'grab' : tool === 'select' ? 'pointer' : 'default';
     }
   };
 
@@ -178,6 +178,13 @@ export default function Home() {
     setZoom(newZoom);
   };
 
+  const handleCanvasMouseLeave = () => {
+    const canvas = canvasRef.current;
+    if (canvas && tool === 'select') {
+      canvas.style.cursor = 'default';
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-screen">
@@ -199,6 +206,7 @@ export default function Home() {
               canvas.style.cursor = 'grab';
             }
           }}
+          active={tool === 'hand'}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -213,6 +221,7 @@ export default function Home() {
               canvas.style.cursor = 'default';
             }
           }}
+          active={tool === 'circle'}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -226,6 +235,7 @@ export default function Home() {
               canvas.style.cursor = 'pointer';
             }
           }}
+          active={tool === 'select'}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
@@ -239,6 +249,7 @@ export default function Home() {
           onMouseDown={handleCanvasMouseDown}
           onMouseUp={handleCanvasMouseUp}
           onMouseMove={handleCanvasMouseMove}
+          onMouseLeave={handleCanvasMouseLeave}
           onWheel={handleWheel}
           style={{ cursor: tool === 'hand' ? 'grab' : tool === 'select' ? 'pointer' : 'default', touchAction: 'none' }}
           className="border border-border shadow-md"
