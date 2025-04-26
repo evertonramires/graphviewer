@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Circle } from 'lucide-react';
+import { Circle, Hand } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface CircleType {
   id: string;
@@ -20,8 +21,8 @@ export default function Home() {
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [tool, setTool] = useState<'hand' | 'circle'>('hand');
 
   const circleRadius = 25;
 
@@ -55,6 +56,8 @@ export default function Home() {
   }, [circles, zoom, pan]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (tool !== 'circle') return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -62,27 +65,12 @@ export default function Home() {
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
 
-    let clickedCircle: CircleType | null = null;
-    for (let i = circles.length - 1; i >= 0; i--) {
-      const circle = circles[i];
-      const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
-      if (distance <= circleRadius) {
-        clickedCircle = circle;
-        break;
-      }
-    }
-
-    if (clickedCircle) {
-      setSelectedCircle(clickedCircle.id);
-    } else {
-      setSelectedCircle(null);
-      const newCircle = {
-        id: generateId(),
-        x: x,
-        y: y,
-      };
-      setCircles([...circles, newCircle]);
-    }
+    const newCircle = {
+      id: generateId(),
+      x: x,
+      y: y,
+    };
+    setCircles([...circles, newCircle]);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -93,27 +81,28 @@ export default function Home() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    let clickedCircle: CircleType | null = null;
-    for (let i = circles.length - 1; i >= 0; i--) {
-      const circle = circles[i];
-      const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-      if (distance <= circleRadius) {
-        clickedCircle = circle;
-        break;
+    if (tool === 'circle') {
+      let clickedCircle: CircleType | null = null;
+      for (let i = circles.length - 1; i >= 0; i--) {
+        const circle = circles[i];
+        const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
+        if (distance <= circleRadius) {
+          clickedCircle = circle;
+          break;
+        }
       }
-    }
 
-    if (clickedCircle) {
+      if (clickedCircle) {
+        setIsDragging(true);
+        setSelectedCircle(clickedCircle.id);
+        setDragOffset({
+          x: x - clickedCircle.x * zoom - pan.x,
+          y: y - clickedCircle.y * zoom - pan.y,
+        });
+        canvas.style.cursor = 'grabbing';
+      }
+    } else if (tool === 'hand') {
       setIsDragging(true);
-      setSelectedCircle(clickedCircle.id);
-      setDragOffset({
-        x: x - circle.x * zoom - pan.x,
-        y: y - circle.y * zoom - pan.y,
-      });
-      canvas.style.cursor = 'grabbing';
-    } else {
-      setIsDragging(true);
-      setSelectedCircle(null);
       setDragOffset({
         x: x - pan.x,
         y: y - pan.y,
@@ -126,7 +115,7 @@ export default function Home() {
     setIsDragging(false);
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.style.cursor = 'default';
+      canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
   };
 
@@ -140,7 +129,7 @@ export default function Home() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (selectedCircle) {
+    if (tool === 'circle' && selectedCircle) {
       setCircles((prevCircles) =>
         prevCircles.map((circle) =>
           circle.id === selectedCircle
@@ -152,7 +141,7 @@ export default function Home() {
             : circle
         )
       );
-    } else {
+    } else if (tool === 'hand') {
       // Panning the canvas
       setPan({
         x: x - dragOffset.x,
@@ -175,6 +164,26 @@ export default function Home() {
           <h1 className="text-lg font-semibold">Circle Canvas</h1>
         </div>
       </div>
+      <div className="bg-secondary p-4 flex items-center justify-start gap-2">
+        <Button variant="outline" active={tool === 'hand'} onClick={() => {
+          setTool('hand');
+          const canvas = canvasRef.current;
+          if (canvas) {
+            canvas.style.cursor = 'grab';
+          }
+        }}>
+          <Hand className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" active={tool === 'circle'} onClick={() => {
+          setTool('circle');
+          const canvas = canvasRef.current;
+          if (canvas) {
+            canvas.style.cursor = 'default';
+          }
+        }}>
+          <Circle className="h-4 w-4" />
+        </Button>
+      </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <canvas
           ref={canvasRef}
@@ -185,7 +194,7 @@ export default function Home() {
           onMouseUp={handleCanvasMouseUp}
           onMouseMove={handleCanvasMouseMove}
           onWheel={handleWheel}
-          style={{ cursor: 'grab', touchAction: 'none' }}
+          style={{ cursor: tool === 'hand' ? 'grab' : 'default', touchAction: 'none' }}
           className="border border-border shadow-md"
         />
       </div>
