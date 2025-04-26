@@ -10,21 +10,29 @@ interface CircleType {
   y: number;
 }
 
+interface EdgeType {
+  id: string;
+  start: string;
+  end: string;
+}
+
 const generateId = () => {
   return Math.random().toString(36).substring(2, 15);
 };
 
 export default function Home() {
   const [circles, setCircles] = useState<CircleType[]>([]);
+  const [edges, setEdges] = useState<EdgeType[]>([]);
   const [selectedCircle, setSelectedCircle] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
+  const [tool, setTool] = useState<'hand' | 'circle' | 'select' | 'edge'>('hand');
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
+  const [edgeStart, setEdgeStart] = useState<string | null>(null);
 
   const circleRadius = 25;
 
@@ -45,6 +53,21 @@ export default function Home() {
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
 
+    // Draw edges
+    edges.forEach((edge) => {
+      const startCircle = circles.find((c) => c.id === edge.start);
+      const endCircle = circles.find((c) => c.id === edge.end);
+
+      if (startCircle && endCircle) {
+        ctx.beginPath();
+        ctx.moveTo(startCircle.x, startCircle.y);
+        ctx.lineTo(endCircle.x, endCircle.y);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    });
+
     // Then draw circles
     circles.forEach((circle) => {
       ctx.beginPath();
@@ -57,7 +80,7 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan, selectedCircle]);
+  }, [circles, zoom, pan, selectedCircle, edges]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -105,6 +128,27 @@ export default function Home() {
         clickedCircle = circle;
         break;
       }
+    }
+
+    if (tool === 'edge') {
+      if (clickedCircle) {
+        if (!edgeStart) {
+          setEdgeStart(clickedCircle.id);
+        } else {
+          if (clickedCircle.id !== edgeStart) {
+            const newEdge = {
+              id: generateId(),
+              start: edgeStart,
+              end: clickedCircle.id,
+            };
+            setEdges([...edges, newEdge]);
+            setEdgeStart(null);
+          } else {
+            setEdgeStart(null);
+          }
+        }
+      }
+      return;
     }
 
     setIsDragging(true);
@@ -277,6 +321,7 @@ export default function Home() {
             setTool('hand');
             setSelectedCircle(null);
             setHoveredCircle(null);
+            setEdgeStart(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'grab';
@@ -293,6 +338,7 @@ export default function Home() {
             setTool('circle');
             setSelectedCircle(null);
             setHoveredCircle(null);
+            setEdgeStart(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'default';
@@ -308,10 +354,25 @@ export default function Home() {
           onClick={() => {
             setTool('select');
             setSelectedCircle(null);
+            setHoveredCircle(null);
+            setEdgeStart(null);
           }}
           active={(tool === 'select').toString()}
         >
           <MousePointer className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className={tool === 'edge' ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('edge');
+            setSelectedCircle(null);
+            setHoveredCircle(null);
+            setEdgeStart(null);
+          }}
+          active={(tool === 'edge').toString()}
+        >
+          Edge
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
