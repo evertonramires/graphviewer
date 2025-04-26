@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Circle, Hand, Plus } from 'lucide-react';
+import { Circle, Hand, Plus, MousePointer } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 interface CircleType {
@@ -22,7 +22,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<'hand' | 'circle'>('hand');
+  const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
 
   const circleRadius = 25;
 
@@ -47,13 +47,15 @@ export default function Home() {
     circles.forEach((circle) => {
       ctx.beginPath();
       ctx.arc(circle.x, circle.y, circleRadius, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'black';
+      ctx.strokeStyle = selectedCircle === circle.id ? 'teal' : 'black'; // Highlight selected circle
+      ctx.lineWidth = selectedCircle === circle.id ? 3 : 1;
       ctx.stroke();
+      ctx.lineWidth = 1;
     });
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan]);
+  }, [circles, zoom, pan, selectedCircle]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -106,6 +108,8 @@ export default function Home() {
         y: y - pan.y,
       });
       canvas.style.cursor = 'grab';
+    } else if (tool === 'select' && clickedCircle) {
+      setSelectedCircle(clickedCircle.id);
     }
   };
 
@@ -186,9 +190,10 @@ export default function Home() {
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <Button
           variant="outline"
-          active={(tool === 'hand').toString()}
+          active={tool === 'hand' ? 'true' : undefined}
           onClick={() => {
             setTool('hand');
+            setSelectedCircle(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'grab';
@@ -199,9 +204,10 @@ export default function Home() {
         </Button>
         <Button
           variant="outline"
-          active={(tool === 'circle').toString()}
+          active={tool === 'circle' ? 'true' : undefined}
           onClick={() => {
             setTool('circle');
+            setSelectedCircle(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'default';
@@ -209,6 +215,19 @@ export default function Home() {
           }}
         >
           <Plus className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          active={tool === 'select' ? 'true' : undefined}
+          onClick={() => {
+            setTool('select');
+            const canvas = canvasRef.current;
+            if (canvas) {
+              canvas.style.cursor = 'pointer';
+            }
+          }}
+        >
+          <MousePointer className="h-4 w-4" />
         </Button>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -221,7 +240,7 @@ export default function Home() {
           onMouseUp={handleCanvasMouseUp}
           onMouseMove={handleCanvasMouseMove}
           onWheel={handleWheel}
-          style={{ cursor: tool === 'hand' ? 'grab' : 'default', touchAction: 'none' }}
+          style={{ cursor: tool === 'hand' ? 'grab' : tool === 'select' ? 'pointer' : 'default', touchAction: 'none' }}
           className="border border-border shadow-md"
         />
       </div>
