@@ -3,13 +3,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Circle } from 'lucide-react';
-import { Slider } from "@/components/ui/slider";
 
 interface CircleType {
   id: string;
   x: number;
   y: number;
-  radius: number;
 }
 
 const generateId = () => {
@@ -64,8 +62,8 @@ export default function Home() {
     // Then draw circles
     circles.forEach((circle) => {
       ctx.beginPath();
-      ctx.arc(circle.x, circle.y, circle.radius, 0, 2 * Math.PI);
-      ctx.fillStyle = 'transparent';
+      ctx.arc(circle.x, circle.y, circleRadius, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'black';
       ctx.stroke();
     });
 
@@ -85,7 +83,7 @@ export default function Home() {
     for (let i = circles.length - 1; i >= 0; i--) {
       const circle = circles[i];
       const distance = Math.sqrt((x - circle.x) ** 2 + (y - circle.y) ** 2);
-      if (distance <= circle.radius) {
+      if (distance <= circleRadius) {
         clickedCircle = circle;
         break;
       }
@@ -112,15 +110,10 @@ export default function Home() {
           id: generateId(),
           x: x,
           y: y,
-          radius: circleRadius,
         };
         setCircles([...circles, newCircle]);
       }
     }
-  };
-
-  const handleZoomChange = (value: number[]) => {
-    setZoom(value[0]);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -135,7 +128,7 @@ export default function Home() {
     for (let i = circles.length - 1; i >= 0; i--) {
       const circle = circles[i];
       const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-      if (distance <= circle.radius * zoom) {
+      if (distance <= circleRadius * zoom) {
         clickedCircle = circle;
         break;
       }
@@ -145,8 +138,8 @@ export default function Home() {
       setIsDragging(true);
       setSelectedCircle(clickedCircle.id);
       setDragOffset({
-        x: x - circle.x * zoom - pan.x,
-        y: y - circle.y * zoom - pan.y,
+        x: x - clickedCircle.x * zoom - pan.x,
+        y: y - clickedCircle.y * zoom - pan.y,
       });
       canvas.style.cursor = 'grabbing';
     } else {
@@ -215,20 +208,6 @@ export default function Home() {
           <h1 className="text-lg font-semibold">Circle Canvas</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <div>
-            <label htmlFor="zoom" className="block text-sm font-medium text-foreground">
-              Zoom: {zoom.toFixed(1)}x
-            </label>
-            <Slider
-              id="zoom"
-              defaultValue={[zoom]}
-              min={0.5}
-              max={2}
-              step={0.1}
-              onValueChange={handleZoomChange}
-              className="w-32"
-            />
-          </div>
           <Button onClick={handleStartLine} disabled={isDrawingLine || !selectedCircle}>
             {isDrawingLine ? "Drawing Line..." : "Draw Line"}
           </Button>
