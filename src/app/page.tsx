@@ -24,6 +24,7 @@ export default function Home() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<'hand' | 'circle' | 'select'>('hand');
   const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
+  const [isMiddleClicking, setIsMiddleClicking] = useState(false);
 
   const circleRadius = 25;
 
@@ -84,6 +85,18 @@ export default function Home() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    if (e.button === 1) { // Middle click
+      setIsMiddleClicking(true);
+      setTool('hand');
+      canvas.style.cursor = 'grab';
+      setDragOffset({
+        x: x - pan.x,
+        y: y - pan.y,
+      });
+      setIsDragging(true);
+      return;
+    }
+
     let clickedCircle: CircleType | null = null;
     for (let i = circles.length - 1; i >= 0; i--) {
       const circle = circles[i];
@@ -114,7 +127,16 @@ export default function Home() {
     }
   };
 
-  const handleCanvasMouseUp = () => {
+  const handleCanvasMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (e.button === 1) {
+      setIsMiddleClicking(false);
+      setIsDragging(false);
+      updateCanvasCursor(canvasRef.current);
+      if (tool === 'hand'){
+        setTool('select');
+      }
+      return;
+    }
     setIsDragging(false);
     const canvas = canvasRef.current;
     if (canvas) {
@@ -132,7 +154,13 @@ export default function Home() {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (tool === 'circle' && selectedCircle) {
+    if (isMiddleClicking || (tool === 'hand') || (tool === 'select' && !hoveredCircle)) {
+      // Panning the canvas
+      setPan({
+        x: x - dragOffset.x,
+        y: y - dragOffset.y,
+      });
+    } else if (tool === 'circle' && selectedCircle) {
       setCircles((prevCircles) =>
         prevCircles.map((circle) =>
           circle.id === selectedCircle
@@ -144,12 +172,6 @@ export default function Home() {
             : circle
         )
       );
-    } else if (tool === 'hand' || (tool === 'select' && !hoveredCircle)) {
-      // Panning the canvas
-      setPan({
-        x: x - dragOffset.x,
-        y: y - dragOffset.y,
-      });
     }
   };
 
@@ -186,7 +208,13 @@ export default function Home() {
     }
   };
 
-  const updateCanvasCursor = (canvas: HTMLCanvasElement) => {
+  const updateCanvasCursor = (canvas: HTMLCanvasElement | null) => {
+    if (!canvas) return;
+    if (isMiddleClicking) {
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+
     if (tool === 'select') {
       canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
     } else {
