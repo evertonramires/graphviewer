@@ -218,7 +218,36 @@ export default function Home() {
           return newPaintedEdges;
         });
       } else {
-        return;
+        let clickedEdge: EdgeType | null = null;
+        for (let i = edges.length - 1; i >= 0; i--) {
+          const edge = edges[i];
+          const startNode = nodes.find(c => c.id === edge.start);
+          const endNode = nodes.find(c => c.id === edge.end);
+          if (startNode && endNode) {
+            const startX = startNode.x;
+            const startY = startNode.y;
+            const endX = endNode.x;
+            const endY = endNode.y;
+
+            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
+            const b = {x: startX, y: startY};
+            const c = {x: endX, y: endY};
+
+            const distance = pointToLineDistance(a, b, c);
+            if (distance < 5) {
+              clickedEdge = edge;
+              break;
+            }
+          }
+        }
+        if (clickedEdge) {
+          setEdges(prevEdges => prevEdges.filter(e => e.id !== clickedEdge.id));
+          setPaintedEdges(prevPaintedEdges => {
+            const newPaintedEdges = new Set(prevPaintedEdges);
+            newPaintedEdges.delete(clickedEdge.id);
+            return newPaintedEdges;
+          });
+        }
       }
     } else if (tool === 'edge' || tool === 'edgeDashed') {
       if (clickedNode) {
@@ -580,33 +609,7 @@ export default function Home() {
         >
           <Trash2 className="h-4 w-4" />
         </Button>
-        <Button
-          variant="outline"
-          className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
-          onClick={() => {
-            setTool('paint');
-            setSelectedNode(null);
-            setHoveredNode(null);
-          }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="green"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-paint-bucket"
-          >
-            <path d="M3 6v14c0 .6.4 1 1 1h16c.6 0 1-.4 1-1V6c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1Z" />
-            <path d="M8 5a2 2 0 0 1 4 0c0 2-3 2-4 0" />
-            <path d="M6 5H5c-.6 0-1 .4-1 1v4" />
-            <path d="M18 5h1c.6 0 1 .4 1 1v4" />
-          </svg>
-        </Button>
+      
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <canvas
@@ -645,3 +648,4 @@ export default function Home() {
     </div>
   );
 }
+
