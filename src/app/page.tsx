@@ -37,7 +37,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<ToolType>('circle');
+  const [tool, setTool: React.Dispatch<React.SetStateAction<ToolType>>] = useState<ToolType>('circle');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
@@ -249,6 +249,7 @@ export default function Home() {
           const newEdge = { id: generateId(), start: potentialEdge, end: clickedNode.id, dashed: tool === 'edgeDashed' };
           setEdges(prevEdges => [...prevEdges, newEdge]);
           setPotentialEdge(null);
+          setTool('edge');
         } else {
           // Start edge
           setPotentialEdge(clickedNode.id);
@@ -494,7 +495,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isHandActive}
           onClick={() => {
             setTool('hand');
             setSelectedNode(null);
@@ -510,7 +510,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isCircleActive}
           onClick={() => {
             setTool('circle');
             setSelectedNode(null);
@@ -526,7 +525,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isSelectActive}
           onClick={() => {
             setTool('select');
             setSelectedNode(null);
@@ -538,7 +536,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isEdgeActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isEdgeActive}
           onClick={() => {
             setTool('edge');
             setSelectedNode(null);
@@ -550,7 +547,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isEdgeDashedActive}
           onClick={() => {
             setTool('edgeDashed');
             setSelectedNode(null);
@@ -562,7 +558,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isDeleteActive}
           onClick={() => {
             setTool('delete');
             setSelectedNode(null);
@@ -574,7 +569,6 @@ export default function Home() {
         <Button
           variant="outline"
           className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
-          active={isPaintActive}
           onClick={() => {
             setTool('paint');
             setSelectedNode(null);
