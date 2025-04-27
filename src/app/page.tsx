@@ -45,6 +45,7 @@ export default function Home() {
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
   const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
+  const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
 
 
   const nodeRadius = 25;
@@ -270,8 +271,39 @@ export default function Home() {
           return newPaintedNodes;
         });
       } else {
-        // Do nothing if not clicked on a node
-        return;
+        let clickedEdge: EdgeType | null = null;
+        for (let i = edges.length - 1; i >= 0; i--) {
+          const edge = edges[i];
+          const startNode = nodes.find(c => c.id === edge.start);
+          const endNode = nodes.find(c => c.id === edge.end);
+          if (startNode && endNode) {
+            const startX = startNode.x;
+            const startY = startNode.y;
+            const endX = endNode.x;
+            const endY = endNode.y;
+
+            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
+            const b = {x: startX, y: startY};
+            const c = {x: endX, y: endY};
+
+            const distance = pointToLineDistance(a, b, c);
+            if (distance < 5) {
+              clickedEdge = edge;
+              break;
+            }
+          }
+        }
+        if (clickedEdge) {
+          setPaintedEdges(prevPaintedEdges => {
+            const newPaintedEdges = new Set(prevPaintedEdges);
+            if (newPaintedEdges.has(clickedEdge.id)) {
+              newPaintedEdges.delete(clickedEdge.id);
+            } else {
+              newPaintedEdges.add(clickedEdge.id);
+            }
+            return newPaintedEdges;
+          });
+        }
       }
     }
   };
@@ -595,4 +627,5 @@ export default function Home() {
     </div>
   );
 }
+
 
