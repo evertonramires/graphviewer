@@ -4,9 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Hand, Plus, MousePointer, Trash2, ArrowDownLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint' | 'edgeDashed';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint' | 'edgeDashed' | 'paintRed';
 
-interface CircleType {
+interface NodeType {
   id: string;
   x: number;
   y: number;
@@ -28,9 +28,9 @@ const generateId = () => {
 const alphabet = 'abcdefghijklmnopqrstuvwxyz';
 
 export default function Home() {
-  const [circles, setCircles] = useState<CircleType[]>([]);
+  const [nodes, setNodes] = useState<NodeType[]>([]);
   const [edges, setEdges] = useState<EdgeType[]>([]);
-  const [selectedCircle, setSelectedCircle] = useState<string | null>(null);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [potentialEdge, setPotentialEdge] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -38,13 +38,13 @@ export default function Home() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [tool, setTool] = useState<ToolType>('circle');
-  const [hoveredCircle, setHoveredCircle] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
-  const [selectedCircleCoords, setSelectedCircleCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
-  const [paintedCircles, setPaintedCircles] = useState<Set<string>>(new Set());
+  const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
+  const [paintedNodes, setPaintedNodes] = useState<Set<string>>(new Set());
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
 
-  const circleRadius = 25;
+  const nodeRadius = 25;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -65,14 +65,14 @@ export default function Home() {
 
     // Draw edges
     edges.forEach(edge => {
-      const startCircle = circles.find(c => c.id === edge.start);
-      const endCircle = circles.find(c => c.id === edge.end);
+      const startNode = nodes.find(c => c.id === edge.start);
+      const endNode = nodes.find(c => c.id === edge.end);
 
-      if (startCircle && endCircle) {
-        const startX = startCircle.x;
-        const startY = startCircle.y;
-        const endX = endCircle.x;
-        const endY = endCircle.y;
+      if (startNode && endNode) {
+        const startX = startNode.x;
+        const startY = startNode.y;
+        const endX = endNode.x;
+        const endY = endNode.y;
 
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -92,15 +92,15 @@ export default function Home() {
       }
     });
 
-    // Then draw circles
-    circles.forEach((circle) => {
+    // Then draw nodes
+    nodes.forEach((node) => {
       ctx.beginPath();
-      ctx.arc(circle.x, circle.y, circleRadius, 0, 2 * Math.PI);
+      ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
       ctx.fillStyle = 'white';
       ctx.fill();
-      ctx.strokeStyle = selectedCircle === circle.id ? 'teal' : 'black'; // Highlight selected circle
-      ctx.lineWidth = selectedCircle === circle.id ? 3 : 1;
-      if (paintedCircles.has(circle.id)) {
+      ctx.strokeStyle = selectedNode === node.id ? 'teal' : 'black'; // Highlight selected node
+      ctx.lineWidth = selectedNode === node.id ? 3 : 1;
+      if (paintedNodes.has(node.id)) {
         ctx.strokeStyle = 'green'; // Paint perimeter green if painted
         ctx.lineWidth = 3;
       }
@@ -112,12 +112,12 @@ export default function Home() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = '16px sans-serif';
-      ctx.fillText(circle.text, circle.x, circle.y);
+      ctx.fillText(node.text, node.x, node.y);
     });
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [circles, zoom, pan, selectedCircle, edges, circleRadius, potentialEdge, paintedCircles, paintedEdges]);
+  }, [nodes, zoom, pan, selectedNode, edges, nodeRadius, potentialEdge, paintedNodes, paintedEdges]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (tool !== 'circle') return;
@@ -129,14 +129,14 @@ export default function Home() {
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
 
-    const newCircle = {
+    const newNode = {
       id: generateId(),
       x: x,
       y: y,
-      label: alphabet[circles.length % alphabet.length],
-      text: alphabet[circles.length % alphabet.length],
+      label: alphabet[nodes.length % alphabet.length],
+      text: alphabet[nodes.length % alphabet.length],
     };
-    setCircles(prevCircles => [...prevCircles, newCircle]);
+    setNodes(prevNodes => [...prevNodes, newNode]);
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -159,12 +159,12 @@ export default function Home() {
       return;
     }
 
-    let clickedCircle: CircleType | null = null;
-    for (let i = circles.length - 1; i >= 0; i--) {
-      const circle = circles[i];
-      const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-      if (distance <= circleRadius) {
-        clickedCircle = circle;
+    let clickedNode: NodeType | null = null;
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      const node = nodes[i];
+      const distance = Math.sqrt(((x - pan.x) / zoom - node.x) ** 2 + ((y - pan.y) / zoom - node.y) ** 2);
+      if (distance <= nodeRadius) {
+        clickedNode = node;
         break;
       }
     }
@@ -178,12 +178,12 @@ export default function Home() {
     if (tool === 'hand') {
       canvas.style.cursor = 'grab';
     } else if (tool === 'select') {
-      if (clickedCircle) {
-        setSelectedCircle(clickedCircle.id);
-        setSelectedCircleCoords({x: clickedCircle.x, y: clickedCircle.y});
+      if (clickedNode) {
+        setSelectedNode(clickedNode.id);
+        setSelectedNodeCoords({x: clickedNode.x, y: clickedNode.y});
         setDragOffset({
-          x: x - clickedCircle.x * zoom - pan.x,
-          y: y - clickedCircle.y * zoom - pan.y,
+          x: x - node.x * zoom - pan.x,
+          y: y - node.y * zoom - pan.y,
         });
         canvas.style.cursor = 'grabbing';
       } else {
@@ -192,17 +192,17 @@ export default function Home() {
     } else if (tool === 'circle') {
       canvas.style.cursor = 'default';
     } else if (tool === 'delete') {
-      if (clickedCircle) {
-        setCircles(prevCircles => prevCircles.filter(c => c.id !== clickedCircle.id));
-        setEdges(prevEdges => prevEdges.filter(e => e.start !== clickedCircle.id && e.end !== clickedCircle.id));
-        setPaintedCircles(prevPaintedCircles => {
-          const newPaintedCircles = new Set(prevPaintedCircles);
-          newPaintedCircles.delete(clickedCircle.id);
-          return newPaintedCircles;
+      if (clickedNode) {
+        setNodes(prevNodes => prevNodes.filter(c => c.id !== clickedNode.id));
+        setEdges(prevEdges => prevEdges.filter(e => e.start !== clickedNode.id && e.end !== clickedNode.id));
+        setPaintedNodes(prevPaintedNodes => {
+          const newPaintedNodes = new Set(prevPaintedNodes);
+          newPaintedNodes.delete(clickedNode.id);
+          return newPaintedNodes;
         });
         setPaintedEdges(prevPaintedEdges => {
           const newPaintedEdges = new Set(prevPaintedEdges);
-          edges.filter(e => e.start === clickedCircle.id || e.end === clickedCircle.id).forEach(edge => {
+          edges.filter(e => e.start === clickedNode.id || e.end === clickedNode.id).forEach(edge => {
             newPaintedEdges.delete(edge.id);
           });
           return newPaintedEdges;
@@ -211,13 +211,13 @@ export default function Home() {
         let clickedEdge: EdgeType | null = null;
         for (let i = edges.length - 1; i >= 0; i--) {
           const edge = edges[i];
-          const startCircle = circles.find(c => c.id === edge.start);
-          const endCircle = circles.find(c => c.id === edge.end);
-          if (startCircle && endCircle) {
-            const startX = startCircle.x;
-            const startY = startCircle.y;
-            const endX = endCircle.x;
-            const endY = endCircle.y;
+          const startNode = nodes.find(c => c.id === edge.start);
+          const endNode = nodes.find(c => c.id === edge.end);
+          if (startNode && endNode) {
+            const startX = startNode.x;
+            const startY = startNode.y;
+            const endX = endNode.x;
+            const endY = endNode.y;
 
             const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
             const b = {x: startX, y: startY};
@@ -240,41 +240,41 @@ export default function Home() {
         }
       }
     } else if (tool === 'edge' || tool === 'edgeDashed') {
-      if (clickedCircle) {
+      if (clickedNode) {
         if (potentialEdge) {
           // Create edge
-          const newEdge = { id: generateId(), start: potentialEdge, end: clickedCircle.id, dashed: tool === 'edgeDashed' };
+          const newEdge = { id: generateId(), start: potentialEdge, end: clickedNode.id, dashed: tool === 'edgeDashed' };
           setEdges(prevEdges => [...prevEdges, newEdge]);
           setPotentialEdge(null);
           setTool(tool);
         } else {
           // Start edge
-          setPotentialEdge(clickedCircle.id);
-          setSelectedCircle(clickedCircle.id);
+          setPotentialEdge(clickedNode.id);
+          setSelectedNode(clickedNode.id);
         }
       }
-    } else if (tool === 'paint') {
-      if (clickedCircle) {
-        setPaintedCircles(prevPaintedCircles => {
-          const newPaintedCircles = new Set(prevPaintedCircles);
-          if (newPaintedCircles.has(clickedCircle.id)) {
-            newPaintedCircles.delete(clickedCircle.id); // Unpaint if already painted
+    } else if (tool === 'paint' || tool === 'paintRed') {
+      if (clickedNode) {
+        setPaintedNodes(prevPaintedNodes => {
+          const newPaintedNodes = new Set(prevPaintedNodes);
+          if (newPaintedNodes.has(clickedNode.id)) {
+            newPaintedNodes.delete(clickedNode.id); // Unpaint if already painted
           } else {
-            newPaintedCircles.add(clickedCircle.id); // Paint if not already painted
+            newPaintedNodes.add(clickedNode.id); // Paint if not already painted
           }
-          return newPaintedCircles;
+          return newPaintedNodes;
         });
       } else {
         let clickedEdge: EdgeType | null = null;
         for (let i = edges.length - 1; i >= 0; i--) {
           const edge = edges[i];
-          const startCircle = circles.find(c => c.id === edge.start);
-          const endCircle = circles.find(c => c.id === edge.end);
-          if (startCircle && endCircle) {
-            const startX = startCircle.x;
-            const startY = startCircle.y;
-            const endX = endCircle.x;
-            const endY = endCircle.y;
+          const startNode = nodes.find(c => c.id === edge.start);
+          const endNode = nodes.find(c => c.id === edge.end);
+          if (startNode && endNode) {
+            const startX = startNode.x;
+            const startY = startNode.y;
+            const endX = endNode.x;
+            const endY = endNode.y;
 
             const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
             const b = {x: startX, y: startY};
@@ -362,16 +362,16 @@ export default function Home() {
         x: x - dragOffset.x,
         y: y - dragOffset.y,
       });
-    } else if (tool === 'select' && selectedCircle) {
-      setCircles((prevCircles) =>
-        prevCircles.map((circle) =>
-          circle.id === selectedCircle
+    } else if (tool === 'select' && selectedNode) {
+      setNodes((prevNodes) =>
+        prevNodes.map((node) =>
+          node.id === selectedNode
             ? {
-              ...circle,
+              ...node,
               x: (x - dragOffset.x) / zoom,
               y: (y - dragOffset.y) / zoom,
             }
-            : circle
+            : node
         )
       );
     } else {
@@ -424,9 +424,9 @@ export default function Home() {
     }
 
     if (tool === 'select') {
-      canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
+      canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
     } else if (tool === 'edge' || tool === 'edgeDashed') {
-      canvas.style.cursor = potentialEdge ? 'crosshair' : hoveredCircle ? 'pointer' : 'grab';
+      canvas.style.cursor = potentialEdge ? 'crosshair' : hoveredNode ? 'pointer' : 'grab';
     }
     else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
@@ -443,19 +443,19 @@ export default function Home() {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
-        let isOverCircle = false;
-        for (let i = circles.length - 1; i >= 0; i--) {
-          const circle = circles[i];
-          const distance = Math.sqrt(((x - pan.x) / zoom - circle.x) ** 2 + ((y - pan.y) / zoom - circle.y) ** 2);
-          if (distance <= circleRadius) {
-            isOverCircle = true;
-            setHoveredCircle(circle.id);
+        let isOverNode = false;
+        for (let i = nodes.length - 1; i >= 0; i--) {
+          const node = nodes[i];
+          const distance = Math.sqrt(((x - pan.x) / zoom - node.x) ** 2 + ((y - pan.y) / zoom - node.y) ** 2);
+          if (distance <= nodeRadius) {
+            isOverNode = true;
+            setHoveredNode(node.id);
             canvas.style.cursor = 'pointer';
             break;
           }
         }
-        if (!isOverCircle) {
-          setHoveredCircle(null);
+        if (!isOverNode) {
+          setHoveredNode(null);
           canvas.style.cursor = 'grab';
         }
       };
@@ -469,7 +469,7 @@ export default function Home() {
     } else {
       canvas.style.cursor = tool === 'hand' ? 'grab' : 'default';
     }
-  }, [tool, circles, pan, zoom, potentialEdge]);
+  }, [tool, nodes, pan, zoom, potentialEdge]);
 
   const isHandActive = tool === 'hand';
   const isCircleActive = tool === 'circle';
@@ -478,6 +478,7 @@ export default function Home() {
   const isEdgeDashedActive = tool === 'edgeDashed';
   const isDeleteActive = tool === 'delete';
   const isPaintActive = tool === 'paint';
+  const isPaintRedActive = tool === 'paintRed';
 
 
   return (
@@ -494,13 +495,14 @@ export default function Home() {
           className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('hand');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'grab';
             }
           }}
+          active={isHandActive}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -509,13 +511,14 @@ export default function Home() {
           className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('circle');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
             const canvas = canvasRef.current;
             if (canvas) {
               canvas.style.cursor = 'default';
             }
           }}
+          active={isCircleActive}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -524,9 +527,10 @@ export default function Home() {
           className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('select');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
           }}
+          active={isSelectActive}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
@@ -535,9 +539,10 @@ export default function Home() {
           className={isEdgeActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('edge');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
           }}
+          active={isEdgeActive}
         >
          <ArrowDownLeft className="h-4 w-4" />
         </Button>
@@ -546,9 +551,10 @@ export default function Home() {
           className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('edgeDashed');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
           }}
+          active={isEdgeDashedActive}
         >
          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
         </Button>
@@ -557,9 +563,10 @@ export default function Home() {
           className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('delete');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
           }}
+          active={isDeleteActive}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -568,9 +575,10 @@ export default function Home() {
           className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
           onClick={() => {
             setTool('paint');
-            setSelectedCircle(null);
-            setHoveredCircle(null);
+            setSelectedNode(null);
+            setHoveredNode(null);
           }}
+          active={isPaintActive}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -579,6 +587,34 @@ export default function Home() {
             viewBox="0 0 24 24"
             fill="none"
             stroke="green"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="lucide lucide-paint-bucket"
+          >
+            <path d="M3 6v14c0 .6.4 1 1 1h16c.6 0 1-.4 1-1V6c0-.6-.4-1-1-1H4c-.6 0-1 .4-1 1Z" />
+            <path d="M8 5a2 2 0 0 1 4 0c0 2-3 2-4 0" />
+            <path d="M6 5H5c-.6 0-1 .4-1 1v4" />
+            <path d="M18 5h1c.6 0 1 .4 1 1v4" />
+          </svg>
+        </Button>
+                <Button
+          variant="outline"
+          className={isPaintRedActive ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('paintRed');
+            setSelectedNode(null);
+            setHoveredNode(null);
+          }}
+          active={isPaintRedActive}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="red"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -608,12 +644,12 @@ export default function Home() {
       </div>
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div>
-          Circles: {circles.length} Edges: {edges.length}
+          Nodes: {nodes.length} Edges: {edges.length}
         </div>
         <div>
-          {selectedCircle && (
+          {selectedNode && (
             <span>
-              Selected Circle: ({selectedCircleCoords.x}, {selectedCircleCoords.y})
+              Selected Node: ({selectedNodeCoords.x}, {selectedNodeCoords.y})
             </span>
           )}
         </div>
@@ -621,3 +657,4 @@ export default function Home() {
     </div>
   );
 }
+
