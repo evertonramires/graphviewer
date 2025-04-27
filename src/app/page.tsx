@@ -652,6 +652,7 @@ export default function Home() {
   const selectedNodeConnections = selectedNode ? adjacencyList[selectedNode] : [];
 
   const list = () => {
+    setSelectedNode(nodes[0].id);
     let text = "";
     for (let i = 0; i < nodes.length; i++) {
       const nodeConnections = adjacencyList[nodes[i].id] || [];
