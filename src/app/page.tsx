@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Hand, Plus, MousePointer, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'edgeDashed' | 'delete' | 'paint';
 
@@ -53,14 +54,12 @@ export default function Home() {
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
   const [paintedNodes, setPaintedNodes] = useState<Set<string>>(new Set());
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
-  const [textInput, setTextInput] = useState('');
+  const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
+  const [showClearConfirmation, setShowClearConfirmation] = useState(false);
 
   const [history, setHistory] = useState<HistoryEntry[]>([{nodes: [], edges: [], paintedNodes: new Set(), paintedEdges: new Set()}]);
   const [historyIndex, setHistoryIndex] = useState(0);
-
-
-  const nodeRadius = 25;
 
   const saveStateToHistory = useCallback(() => {
     setHistory(prevHistory => {
@@ -79,6 +78,13 @@ export default function Home() {
     saveStateToHistory();
   }, []);
 
+  const nodeRadius = 25;
+  const SNAP_GRID_SIZE = 10;
+
+  const snapToGrid = (value: number): number => {
+    return Math.round(value / SNAP_GRID_SIZE) * SNAP_GRID_SIZE;
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,6 +101,30 @@ export default function Home() {
     // Apply pan and zoom
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
+
+     // Draw grid
+     if (zoom > 0.5) {
+      const gridColor = 'lightgrey';
+      const numLinesX = canvas.width / (SNAP_GRID_SIZE * zoom);
+      const numLinesY = canvas.height / (SNAP_GRID_SIZE * zoom);
+
+      ctx.strokeStyle = gridColor;
+      ctx.lineWidth = 0.5;
+
+      for (let i = 0; i < numLinesX; i++) {
+          ctx.beginPath();
+          ctx.moveTo(i * SNAP_GRID_SIZE * zoom - pan.x, -pan.y);
+          ctx.lineTo(i * SNAP_GRID_SIZE * zoom - pan.x, canvas.height - pan.y);
+          ctx.stroke();
+      }
+
+      for (let j = 0; j < numLinesY; j++) {
+          ctx.beginPath();
+          ctx.moveTo(-pan.x, j * SNAP_GRID_SIZE * zoom - pan.y);
+          ctx.lineTo(canvas.width - pan.x, j * SNAP_GRID_SIZE * zoom - pan.y);
+          ctx.stroke();
+      }
+    }
 
     // Draw edges
     edges.forEach(edge => {
@@ -150,16 +180,15 @@ export default function Home() {
 
     // Restore the transformation matrix
     ctx.restore();
-  }, [nodes, zoom, pan, selectedNode, edges, nodeRadius, potentialEdge, paintedNodes, paintedEdges]);
+  }, [nodes, zoom, pan, selectedNode, edges, nodeRadius, potentialEdge, paintedNodes, paintedEdges, isEditingText]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left - pan.x) / zoom;
-    const y = (e.clientY - rect.top - pan.y) / zoom;
-
+    let x = (e.clientX - rect.left - pan.x) / zoom;
+    let y = (e.clientY - rect.top - pan.y) / zoom;
 
     if (tool === 'hand') return;
     if (tool === 'select') return;
@@ -167,6 +196,9 @@ export default function Home() {
     if (tool === 'edgeDashed') return;
     if (tool === 'paint') return;
     if (tool === 'delete') return;
+
+    x = snapToGrid(x);
+    y = snapToGrid(y);
 
     const newNode = {
       id: generateId(),
@@ -408,6 +440,7 @@ export default function Home() {
     if (canvas) {
       updateCanvasCursor(canvas);
     }
+    saveStateToHistory();
   };
 
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -429,14 +462,22 @@ export default function Home() {
       });
     } else if (tool === 'select' && selectedNode) {
       setNodes((prevNodes) =>
-        prevNodes.map((node) =>
-          node.id === selectedNode
-            ? {
+        prevNodes.map((node) => {
+          if (node.id === selectedNode) {
+            let newX = (x - dragOffset.x) / zoom;
+            let newY = (y - dragOffset.y) / zoom;
+
+            newX = snapToGrid(newX);
+            newY = snapToGrid(newY);
+
+            return {
               ...node,
-              x: (x - dragOffset.x) / zoom,
-              y: (y - dragOffset.y) / zoom,
-            }
-            : node
+              x: newX,
+              y: newY,
+            };
+          }
+          return node;
+        }
         )
       );
     } else {
@@ -616,6 +657,10 @@ export default function Home() {
       } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
         event.preventDefault();
         redo();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        setSelectedNode(null);
+        setSelectedEdge(null);
       }
     };
 
@@ -627,6 +672,7 @@ export default function Home() {
   }, [undo, redo]);
 
   const clearCanvas = () => {
+    setShowClearConfirmation(false);
     setNodes([]);
     setEdges([]);
     setPaintedNodes(new Set());
@@ -637,21 +683,60 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          
+      <div className="flex items-center gap-2">
+        
             Graph Viewer
           
         </div>
         <div>
-        <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
-          Undo
-        </Button>
-        <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
-          Redo
-        </Button>
-         <Button variant="outline" onClick={clearCanvas}>
-          Clear
-        </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
+                  Undo
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Undo
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
+                  Redo
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Redo
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline">
+                      Clear
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={clearCanvas}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </TooltipTrigger>
+              <TooltipContent>
+                Clear
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
       </div>
       </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
@@ -732,7 +817,6 @@ export default function Home() {
             <div className="flex flex-col items-center">
               <Button
                 variant="outline"
-                
                 onClick={() => {
                   setTool('edge');
                   setSelectedNode(null);
@@ -868,5 +952,3 @@ export default function Home() {
     </div>
   );
 }
-
-
