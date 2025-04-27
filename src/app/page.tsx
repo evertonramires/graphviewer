@@ -37,7 +37,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool: React.Dispatch<React.SetStateAction<ToolType>>] = useState<ToolType>('circle');
+  const [tool, setTool] = useState<ToolType>('circle');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
@@ -249,7 +249,7 @@ export default function Home() {
           const newEdge = { id: generateId(), start: potentialEdge, end: clickedNode.id, dashed: tool === 'edgeDashed' };
           setEdges(prevEdges => [...prevEdges, newEdge]);
           setPotentialEdge(null);
-          setTool('edge');
+          setTool(tool);
         } else {
           // Start edge
           setPotentialEdge(clickedNode.id);
@@ -624,3 +624,4 @@ export default function Home() {
     </div>
   );
 }
+
