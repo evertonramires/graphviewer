@@ -1,3 +1,17 @@
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1929021856.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1596365801.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1136183516.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:757581411.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:708618377.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:3460624997.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:3090369928.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1787366457.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:4266159705.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:3123684445.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1301313212.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:2299691118.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:4042596968.
+// Suggested code may be subject to a license. Learn more: ~LicenseLog:1696587833.
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
@@ -634,9 +648,9 @@ export default function Home() {
   const list = () => {
     let text = "";
     for (let i = 0; i < nodes.length; i++) {
-    const nodeConnections = adjacencyList[nodes[i].id] || [];
-    const connectedNodeLabels = nodeConnections.map(nodeId => nodes.find(n => n.id === nodeId)?.text || 'Unknown');
-      text += "adj["+ nodes[i].text +"] = {" + connectedNodeLabels.join(', ') + "}\n";
+      const nodeConnections = adjacencyList[nodes[i].id] || [];
+      const connectedNodeLabels = nodeConnections.map(nodeId => nodes.find(n => n.id === nodeId)?.text || 'Unknown');
+      text += "adj[" + nodes[i].text + "] = {" + connectedNodeLabels.join(', ') + "}\n";
     }
     setListView(!listView);
     setListText(text);
@@ -704,73 +718,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="bg-secondary p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-
-          Graph Viewer
-
-        </div>
-        <div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={list} >
-                  List
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                List
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
-                  Undo
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Undo
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
-                  Redo
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Redo
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline">
-                      Clear
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={clearCanvas}>Continue</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </TooltipTrigger>
-              <TooltipContent>
-                Clear
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <TooltipProvider>
           <Tooltip>
@@ -944,6 +891,77 @@ export default function Home() {
               Paint
             </TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button variant="outline" onClick={list}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-list"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+              </Button>
+              <span className="text-xs">List</span>
+            </div>
+            </TooltipTrigger>
+
+
+            <TooltipContent>
+              List
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+
+              <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-undo"><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></svg>
+              </Button>
+              <span className="text-xs">Undo</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Undo
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-redo"><path d="M21 7v6H15" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" /></svg>
+              </Button>
+              <span className="text-xs">Redo</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Redo
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                <div className="flex flex-col items-center">
+                  <Button variant="outline">
+                    C
+                  </Button>
+                  <span className="text-xs">Clear</span>
+                  </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={clearCanvas}>Continue</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </TooltipTrigger>
+            <TooltipContent>
+              Clear
+            </TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -962,9 +980,9 @@ export default function Home() {
         />
       </div>
       {listView && (
-      <div className="w-1/6 rounded p-4">
+        <div className="w-1/6 rounded p-4">
           <pre className="whitespace-pre-wrap">
-          {listText}
+            {listText}
           </pre>
         </div>
       )}
