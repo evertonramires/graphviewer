@@ -123,10 +123,9 @@ export default function Home() {
   }, [nodes, zoom, pan, selectedNode, edges, nodeRadius, potentialEdge, paintedNodes, paintedEdges]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (tool !== 'circle') return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
+    if (tool === 'select') return;
 
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
@@ -620,7 +619,7 @@ export default function Home() {
         <div>
           {selectedNode && (
             <span>
-              Selected Node: ({selectedNodeCoords.x}, {selectedNodeCoords.y})
+              Selected Node: ({selectedNodeCoords.x ? Math.floor(selectedNodeCoords.x) : null}, {selectedNodeCoords.y ? Math.floor(selectedNodeCoords.y) : null})
             </span>
           )}
         </div>
