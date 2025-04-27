@@ -3,8 +3,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Hand, Plus, MousePointer, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'edgeDashed' | 'delete' | 'paint' | 'edit';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'edgeDashed' | 'delete' | 'paint';
 
 interface NodeType {
   id: string;
@@ -48,7 +49,6 @@ export default function Home() {
   const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
-
 
   const nodeRadius = 25;
 
@@ -138,7 +138,6 @@ export default function Home() {
     if (tool === 'edgeDashed') return;
     if (tool === 'paint') return;
     if (tool === 'delete') return;
-    if (tool === 'edit') return;
 
     const newNode = {
       id: generateId(),
@@ -309,11 +308,6 @@ export default function Home() {
             return newPaintedEdges;
           });
         }
-      }
-    } else if (tool === 'edit') {
-      if (clickedNode) {
-        setIsEditingText(clickedNode.id);
-        setTextInput(clickedNode.text);
       }
     }
   };
@@ -494,7 +488,6 @@ export default function Home() {
   const isEdgeDashedActive = tool === 'edgeDashed';
   const isDeleteActive = tool === 'delete';
   const isPaintActive = tool === 'paint';
-  const isEditActive = tool === 'edit';
 
   const getConnectedNodeLabels = () => {
     if (!selectedNode) return [];
@@ -532,188 +525,191 @@ export default function Home() {
   const adjacencyList = getAdjacencyList();
   const selectedNodeConnections = selectedNode ? adjacencyList[selectedNode] : [];
 
-  const handleTextEditKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleTextEditSubmit();
-    }
-  };
-
-  const handleTextEditSubmit = () => {
-    setNodes(prevNodes => {
-      return prevNodes.map(node => {
-        if (node.id === isEditingText) {
-          return { ...node, text: textInput };
-        }
-        return node;
-      });
-    });
-    setIsEditingText(null);
-  };
-
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* <Circle className="h-6 w-6 text-primary" /> */}
-          <h1 className="text-lg font-semibold">Graph Viewer</h1>
+          
+            Graph Viewer
+          
         </div>
       </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('hand');
-              setSelectedNode(null);
-              setHoveredNode(null);
-              const canvas = canvasRef.current;
-              if (canvas) {
-                canvas.style.cursor = 'grab';
-              }
-            }}
-          >
-            <Hand className="h-4 w-4" />
-          </Button>
-          <span className="text-xs">Pan</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('circle');
-              setSelectedNode(null);
-              setHoveredNode(null);
-              const canvas = canvasRef.current;
-              if (canvas) {
-                canvas.style.cursor = 'default';
-              }
-            }}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <span className="text-xs">Add</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('select');
-              setSelectedNode(null);
-              setHoveredNode(null);
-            }}
-          >
-            <MousePointer className="h-4 w-4" />
-          </Button>
-          <span className="text-xs">Select</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isEdgeActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('edge');
-              setSelectedNode(null);
-              setHoveredNode(null);
-            }}
-          >
-           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line"><line x1="19" x2="5" y1="12" y2="12"/></svg>
-          </Button>
-          <span className="text-xs">Edge</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('edgeDashed');
-              setSelectedNode(null);
-              setHoveredNode(null);
-            }}
-          >
-           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
-          </Button>
-          <span className="text-xs">Dashed Edge</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('delete');
-              setSelectedNode(null);
-              setHoveredNode(null);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-          <span className="text-xs">Delete</span>
-        </div>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
-            onClick={() => {
-              setTool('paint');
-              setSelectedNode(null);
-              setHoveredNode(null);
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="green"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="lucide lucide-paint-bucket"
-            >
-              <path d="M3 6h18" />
-              <path d="M12 10v11" />
-              <path d="M5 6.172a4 4 0 0 0 0 5.656" />
-              <path d="M19 6.172a4 4 0 0 1 0 5.656" />
-              <path d="M8.293 2.293a1 1 0 0 1 1.414 0l2.683 2.683a1 1 0 0 0 1.414 0l2.586-2.586a1 1 0 0 1 1.414 0l1 1" />
-            </svg>
-          </Button>
-          <span className="text-xs">Paint</span>
-        </div>
-          <div className="flex flex-col items-center">
-            <Button
-              variant="outline"
-              className={isEditActive ? 'bg-accent text-accent-foreground' : ''}
-              onClick={() => {
-                setTool('edit');
-                setSelectedNode(null);
-                setHoveredNode(null);
-              }}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="lucide lucide-text"
+        <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('hand');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                  const canvas = canvasRef.current;
+                  if (canvas) {
+                    canvas.style.cursor = 'grab';
+                  }
+                }}
               >
-                <path d="M3 3h18" />
-                <path d="M5 8v13" />
-                <path d="M19 8v13" />
-                <path d="M11 21V8" />
-                <path d="M8 3h6" />
-              </svg>
-            </Button>
-            <span className="text-xs">Edit Text</span>
-          </div>
+                <Hand className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">Pan</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Pan
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('circle');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                  const canvas = canvasRef.current;
+                  if (canvas) {
+                    canvas.style.cursor = 'default';
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">Add</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Add node
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('select');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                }}
+              >
+                <MousePointer className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">Select</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Select node
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isEdgeActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('edge');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                }}
+              >
+               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line"><line x1="19" x2="5" y1="12" y2="12"/></svg>
+              </Button>
+              <span className="text-xs">Edge</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Create edge
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('edgeDashed');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                }}
+              >
+               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
+              </Button>
+              <span className="text-xs">Dashed Edge</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Create dashed edge
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('delete');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">Delete</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Delete
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
+              <Button
+                variant="outline"
+                className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('paint');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                }}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="green"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-paint-bucket"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M12 10v11" />
+                  <path d="M5 6.172a4 4 0 0 0 0 5.656" />
+                  <path d="M19 6.172a4 4 0 0 1 0 5.656" />
+                  <path d="M8.293 2.293a1 1 0 0 1 1.414 0l2.683 2.683a1 1 0 0 0 1.414 0l2.586-2.586a1 1 0 0 1 1.414 0l1 1" />
+                </svg>
+              </Button>
+              <span className="text-xs">Paint</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Paint
+          </TooltipContent>
+        </Tooltip>
+        </TooltipProvider>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
         <canvas
