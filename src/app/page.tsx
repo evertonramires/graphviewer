@@ -79,7 +79,7 @@ export default function Home() {
   }, []);
 
   const nodeRadius = 25;
-  const SNAP_GRID_SIZE = 50;
+  const SNAP_GRID_SIZE = 25;
 
   const snapToGrid = (value: number): number => {
     return Math.round(value / SNAP_GRID_SIZE) * SNAP_GRID_SIZE;
@@ -101,30 +101,6 @@ export default function Home() {
     // Apply pan and zoom
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoom, zoom);
-
-     // Draw grid
-     if (zoom > 0.5) {
-      const gridColor = 'lightgrey';
-      const numLinesX = canvas.width / (SNAP_GRID_SIZE * zoom);
-      const numLinesY = canvas.height / (SNAP_GRID_SIZE * zoom);
-
-      ctx.strokeStyle = gridColor;
-      ctx.lineWidth = 0.5;
-
-      for (let i = 0; i < numLinesX; i++) {
-          ctx.beginPath();
-          ctx.moveTo(i * SNAP_GRID_SIZE * zoom - pan.x, -pan.y);
-          ctx.lineTo(i * SNAP_GRID_SIZE * zoom - pan.x, canvas.height - pan.y);
-          ctx.stroke();
-      }
-
-      for (let j = 0; j < numLinesY; j++) {
-          ctx.beginPath();
-          ctx.moveTo(-pan.x, j * SNAP_GRID_SIZE * zoom - pan.y);
-          ctx.lineTo(canvas.width - pan.x, j * SNAP_GRID_SIZE * zoom - pan.y);
-          ctx.stroke();
-      }
-    }
 
     // Draw edges
     edges.forEach(edge => {
