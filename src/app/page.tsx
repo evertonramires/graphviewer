@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Hand, Plus, MousePointer, Trash2, Circle } from 'lucide-react';
+import { Hand, Plus, MousePointer, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint' | 'edgeDashed';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'edgeDashed' | 'delete' | 'paint';
 
 interface NodeType {
   id: string;
@@ -39,7 +39,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool: React.Dispatch<React.SetStateAction<ToolType>>] = useState<ToolType>('circle');
+  const [tool, setTool] = useState<ToolType>('circle');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
@@ -676,3 +676,4 @@ export default function Home() {
     </div>
   );
 }
+
