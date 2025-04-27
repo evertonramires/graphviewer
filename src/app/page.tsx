@@ -852,7 +852,7 @@ export default function Home() {
         <div>
           {selectedNode && (
             <span>
-              Connected Nodes: {getConnectedNodeLabels().join(', ') || 'None'}
+              adj[{nodes.find(n => n.id === selectedNode)?.text || 'Unknown'}] = {'{'+getConnectedNodeLabels().join(', ')+'}' || 'None'}
             </span>
           )}
         </div>
