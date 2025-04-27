@@ -150,7 +150,7 @@ export default function Home() {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         if (edge.dashed) {
-          ctx.setLineDash([5, 5]); // Dashed line
+          ctx.setLineDash([2, 8]); // Dotted line
         } else {
           ctx.setLineDash([]); // Solid line
         }
@@ -878,11 +878,11 @@ export default function Home() {
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20" /><path d="M6 12h2" /><path d="M14 12h2" /><path d="M2 21h20" /></svg>
                 </Button>
-                <span className="text-xs">Dashed Edge</span>
+                <span className="text-xs">Dotted Edge</span>
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              Create dashed edge
+              Create dotted edge
             </TooltipContent>
           </Tooltip>
           <Tooltip>
