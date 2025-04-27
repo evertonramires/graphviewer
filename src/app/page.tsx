@@ -133,6 +133,8 @@ export default function Home() {
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
 
+
+    if (tool === 'hand') return;
     if (tool === 'select') return;
     if (tool === 'edge') return;
     if (tool === 'edgeDashed') return;
