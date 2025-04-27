@@ -43,6 +43,9 @@ export default function Home() {
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
   const [paintedNodes, setPaintedNodes] = useState<Set<string>>(new Set());
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
+  const [isEditingText, setIsEditingText] = useState<string | null>(null);
+  const [textInput, setTextInput] = useState('');
+
 
   const nodeRadius = 25;
 
@@ -182,8 +185,8 @@ export default function Home() {
         setSelectedNode(clickedNode.id);
         setSelectedNodeCoords({x: clickedNode.x, y: clickedNode.y});
         setDragOffset({
-          x: x - node.x * zoom - pan.x,
-          y: y - node.y * zoom - pan.y,
+          x: x - clickedNode.x * zoom - pan.x,
+          y: y - clickedNode.y * zoom - pan.y,
         });
         canvas.style.cursor = 'grabbing';
       } else {
@@ -502,7 +505,6 @@ export default function Home() {
               canvas.style.cursor = 'grab';
             }
           }}
-          active={isHandActive}
         >
           <Hand className="h-4 w-4" />
         </Button>
@@ -518,7 +520,6 @@ export default function Home() {
               canvas.style.cursor = 'default';
             }
           }}
-          active={isCircleActive}
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -530,7 +531,6 @@ export default function Home() {
             setSelectedNode(null);
             setHoveredNode(null);
           }}
-          active={isSelectActive}
         >
           <MousePointer className="h-4 w-4" />
         </Button>
@@ -542,7 +542,6 @@ export default function Home() {
             setSelectedNode(null);
             setHoveredNode(null);
           }}
-          active={isEdgeActive}
         >
          <ArrowDownLeft className="h-4 w-4" />
         </Button>
@@ -554,7 +553,6 @@ export default function Home() {
             setSelectedNode(null);
             setHoveredNode(null);
           }}
-          active={isEdgeDashedActive}
         >
          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
         </Button>
@@ -566,7 +564,6 @@ export default function Home() {
             setSelectedNode(null);
             setHoveredNode(null);
           }}
-          active={isDeleteActive}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -578,7 +575,6 @@ export default function Home() {
             setSelectedNode(null);
             setHoveredNode(null);
           }}
-          active={isPaintActive}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -657,4 +653,3 @@ export default function Home() {
     </div>
   );
 }
-
