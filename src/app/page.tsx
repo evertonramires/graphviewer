@@ -53,7 +53,6 @@ export default function Home() {
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
   const [paintedNodes, setPaintedNodes] = useState<Set<string>>(new Set());
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
-  const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
 
@@ -609,11 +608,28 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        undo();
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [undo, redo]);
+
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {/* <Circle className="h-6 w-6 text-primary" /> */}
           
             Graph Viewer
           
