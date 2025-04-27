@@ -79,7 +79,7 @@ export default function Home() {
   }, []);
 
   const nodeRadius = 25;
-  const SNAP_GRID_SIZE = 10;
+  const SNAP_GRID_SIZE = 50;
 
   const snapToGrid = (value: number): number => {
     return Math.round(value / SNAP_GRID_SIZE) * SNAP_GRID_SIZE;
@@ -952,3 +952,4 @@ export default function Home() {
     </div>
   );
 }
+
