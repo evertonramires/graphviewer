@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Hand, Plus, MousePointer, Trash2, ArrowDownLeft } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
-type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint';
+type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint' | 'edgeDashed';
 
 interface CircleType {
   id: string;
@@ -18,6 +18,7 @@ interface EdgeType {
   id: string;
   start: string;
   end: string;
+  dashed: boolean;
 }
 
 const generateId = () => {
@@ -76,12 +77,18 @@ export default function Home() {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
+        if (edge.dashed) {
+          ctx.setLineDash([5, 5]); // Dashed line
+        } else {
+          ctx.setLineDash([]); // Solid line
+        }
         if (paintedEdges.has(edge.id)) {
           ctx.strokeStyle = 'green'; // Paint edge green if painted
         } else {
           ctx.strokeStyle = 'black';
         }
         ctx.stroke();
+        ctx.setLineDash([]); // Reset line dash
       }
     });
 
@@ -232,14 +239,14 @@ export default function Home() {
           });
         }
       }
-    } else if (tool === 'edge') {
+    } else if (tool === 'edge' || tool === 'edgeDashed') {
       if (clickedCircle) {
         if (potentialEdge) {
           // Create edge
-          const newEdge = { id: generateId(), start: potentialEdge, end: clickedCircle.id };
+          const newEdge = { id: generateId(), start: potentialEdge, end: clickedCircle.id, dashed: tool === 'edgeDashed' };
           setEdges(prevEdges => [...prevEdges, newEdge]);
           setPotentialEdge(null);
-          setTool('edge');
+          setTool(tool);
         } else {
           // Start edge
           setPotentialEdge(clickedCircle.id);
@@ -418,7 +425,7 @@ export default function Home() {
 
     if (tool === 'select') {
       canvas.style.cursor = hoveredCircle ? 'pointer' : 'grab';
-    } else if (tool === 'edge') {
+    } else if (tool === 'edge' || tool === 'edgeDashed') {
       canvas.style.cursor = potentialEdge ? 'crosshair' : hoveredCircle ? 'pointer' : 'grab';
     }
     else {
@@ -430,7 +437,7 @@ export default function Home() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (tool === 'select' || tool === 'edge') {
+    if (tool === 'select' || tool === 'edge' || tool === 'edgeDashed') {
       const handleMouseMove = (e: MouseEvent) => {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -468,6 +475,7 @@ export default function Home() {
   const isCircleActive = tool === 'circle';
   const isSelectActive = tool === 'select';
   const isEdgeActive = tool === 'edge';
+  const isEdgeDashedActive = tool === 'edgeDashed';
   const isDeleteActive = tool === 'delete';
   const isPaintActive = tool === 'paint';
 
@@ -477,7 +485,7 @@ export default function Home() {
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {/* <Circle className="h-6 w-6 text-primary" /> */}
-          <h1 className="text-lg font-semibold">Circle Canvas</h1>
+          <h1 className="text-lg font-semibold">Graph Viewer</h1>
         </div>
       </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
@@ -532,6 +540,17 @@ export default function Home() {
           }}
         >
          <ArrowDownLeft className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
+          onClick={() => {
+            setTool('edgeDashed');
+            setSelectedCircle(null);
+            setHoveredCircle(null);
+          }}
+        >
+         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
         </Button>
         <Button
           variant="outline"
@@ -602,5 +621,3 @@ export default function Home() {
     </div>
   );
 }
-
-

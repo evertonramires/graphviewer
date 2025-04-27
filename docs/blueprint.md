@@ -1,4 +1,4 @@
-# **App Name**: Circle Canvas
+# **App Name**: Graph Viewer
 
 ## Core Features:
 
