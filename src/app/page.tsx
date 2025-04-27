@@ -128,6 +128,7 @@ export default function Home() {
     if (tool === 'select') return;
     if (tool === 'edge') return;
     if (tool === 'edgeDashed') return;
+    if (tool === 'paint') return;
 
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
@@ -182,10 +183,6 @@ export default function Home() {
     if (tool === 'hand') {
       canvas.style.cursor = 'grab';
     } else if (tool === 'select') {
-        if (!clickedNode) {
-            setIsDragging(false);
-            return;
-        }
       if (clickedNode) {
         setSelectedNode(clickedNode.id);
         setSelectedNodeCoords({x: clickedNode.x, y: clickedNode.y});
@@ -273,39 +270,8 @@ export default function Home() {
           return newPaintedNodes;
         });
       } else {
-        let clickedEdge: EdgeType | null = null;
-        for (let i = edges.length - 1; i >= 0; i--) {
-          const edge = edges[i];
-          const startNode = nodes.find(c => c.id === edge.start);
-          const endNode = nodes.find(c => c.id === edge.end);
-          if (startNode && endNode) {
-            const startX = startNode.x;
-            const startY = startNode.y;
-            const endX = endNode.x;
-            const endY = endNode.y;
-
-            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
-            const b = {x: startX, y: startY};
-            const c = {x: endX, y: endY};
-
-            const distance = pointToLineDistance(a, b, c);
-            if (distance < 5) {
-              clickedEdge = edge;
-              break;
-            }
-          }
-        }
-        if (clickedEdge) {
-          setPaintedEdges(prevPaintedEdges => {
-            const newPaintedEdges = new Set(prevPaintedEdges);
-            if (newPaintedEdges.has(clickedEdge.id)) {
-              newPaintedEdges.delete(clickedEdge.id); // Unpaint if already painted
-            } else {
-              newPaintedEdges.add(clickedEdge.id); // Paint if not already painted
-            }
-            return newPaintedEdges;
-          });
-        }
+        // Do nothing if not clicked on a node
+        return;
       }
     }
   };
@@ -629,3 +595,4 @@ export default function Home() {
     </div>
   );
 }
+
