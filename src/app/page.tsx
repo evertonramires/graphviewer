@@ -14,6 +14,7 @@ interface NodeType {
   y: number;
   label: string;
   text: string;
+  visible?: boolean;
 }
 
 interface EdgeType {
@@ -51,14 +52,17 @@ export default function Home() {
   const [tool, setTool] = useState<ToolType>('circle');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
-  const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
+  const [selectedNodeCoords, setSelectedNodeCoords] = useState<{ x: number | null, y: number | null }>({ x: null, y: null });
   const [paintedNodes, setPaintedNodes] = useState<Set<string>>(new Set());
   const [paintedEdges, setPaintedEdges] = useState<Set<string>>(new Set());
   const [isEditingText, setIsEditingText] = useState<string | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
   const [showClearConfirmation, setShowClearConfirmation] = useState(false);
+  const [listText, setListText] = useState<string>("");
+  const [listView, setListView] = useState(false);
 
-  const [history, setHistory] = useState<HistoryEntry[]>([{nodes: [], edges: [], paintedNodes: new Set(), paintedEdges: new Set()}]);
+
+  const [history, setHistory] = useState<HistoryEntry[]>([{ nodes: [], edges: [], paintedNodes: new Set(), paintedEdges: new Set() }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const saveStateToHistory = useCallback(() => {
@@ -182,12 +186,13 @@ export default function Home() {
       y: y,
       label: alphabet[nodes.length % alphabet.length],
       text: alphabet[nodes.length % alphabet.length],
+      visible: true,
     };
 
     setNodes(prevNodes => {
-        const newNodes = [...prevNodes, newNode];
-        saveStateToHistory();
-        return newNodes;
+      const newNodes = [...prevNodes, newNode];
+      saveStateToHistory();
+      return newNodes;
     });
   };
 
@@ -232,7 +237,7 @@ export default function Home() {
     } else if (tool === 'select') {
       if (clickedNode) {
         setSelectedNode(clickedNode.id);
-        setSelectedNodeCoords({x: clickedNode.x, y: clickedNode.y});
+        setSelectedNodeCoords({ x: clickedNode.x, y: clickedNode.y });
         setDragOffset({
           x: x - clickedNode.x * zoom - pan.x,
           y: y - clickedNode.y * zoom - pan.y,
@@ -281,9 +286,9 @@ export default function Home() {
             const endX = endNode.x;
             const endY = endNode.y;
 
-            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
-            const b = {x: startX, y: startY};
-            const c = {x: endX, y: endY};
+            const a = { x: (x - pan.x) / zoom, y: (y - pan.y) / zoom };
+            const b = { x: startX, y: startY };
+            const c = { x: endX, y: endY };
 
             const distance = pointToLineDistance(a, b, c);
             if (distance < 5) {
@@ -348,9 +353,9 @@ export default function Home() {
             const endX = endNode.x;
             const endY = endNode.y;
 
-            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
-            const b = {x: startX, y: startY};
-            const c = {x: endX, y: endY};
+            const a = { x: (x - pan.x) / zoom, y: (y - pan.y) / zoom };
+            const b = { x: startX, y: startY };
+            const c = { x: endX, y: endY };
 
             const distance = pointToLineDistance(a, b, c);
             if (distance < 5) {
@@ -380,18 +385,18 @@ export default function Home() {
     const dy = lineEnd.y - lineStart.y;
 
     if (dx === 0 && dy === 0) {
-        // It's a point, treat as distance to lineStart
-        return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+      // It's a point, treat as distance to lineStart
+      return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
     }
 
     const t = ((point.x - lineStart.x) * dx + (point.y - lineStart.y) * dy) / (dx ** 2 + dy ** 2);
 
     // If t is outside the segment, find distance to closest endpoint
     if (t < 0) {
-        return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
+      return Math.sqrt((point.x - lineStart.x) ** 2 + (point.y - lineStart.y) ** 2);
     }
     if (t > 1) {
-        return Math.sqrt((point.x - lineEnd.x) ** 2 + (point.y - lineEnd.y) ** 2);
+      return Math.sqrt((point.x - lineEnd.x) ** 2 + (point.y - lineEnd.y) ** 2);
     }
 
     // Otherwise, get the closest point on the line segment and calculate distance
@@ -406,7 +411,7 @@ export default function Home() {
       setIsMiddleClicking(false);
       setIsDragging(false);
       updateCanvasCursor(canvasRef.current);
-      if (tool === 'hand'){
+      if (tool === 'hand') {
         setTool('select');
       }
       return;
@@ -457,11 +462,11 @@ export default function Home() {
         )
       );
     } else {
-        canvas.style.cursor = 'grab';
-        setPan({
-          x: x - dragOffset.x,
-          y: y - dragOffset.y,
-        });
+      canvas.style.cursor = 'grab';
+      setPan({
+        x: x - dragOffset.x,
+        y: y - dragOffset.y,
+      });
     }
   };
 
@@ -575,13 +580,13 @@ export default function Home() {
 
   const getAdjacencyList = () => {
     if (!selectedNode) return {};
-  
+
     const adjacencyList: { [key: string]: string[] } = {};
-  
+
     nodes.forEach(node => {
       adjacencyList[node.id] = [];
     });
-  
+
     edges.forEach(edge => {
       if (edge.start && edge.end) {
         adjacencyList[edge.start] = adjacencyList[edge.start] || [];
@@ -590,12 +595,24 @@ export default function Home() {
         adjacencyList[edge.end].push(edge.start);
       }
     });
-    
+
     return adjacencyList;
   };
-  
+
   const adjacencyList = getAdjacencyList();
   const selectedNodeConnections = selectedNode ? adjacencyList[selectedNode] : [];
+
+  const list = () => {
+    let text = "";
+    for (let i = 0; i < nodes.length; i++) {
+    const nodeConnections = adjacencyList[nodes[i].id] || [];
+    const connectedNodeLabels = nodeConnections.map(nodeId => nodes.find(n => n.id === nodeId)?.text || 'Unknown');
+      text += "adj["+ nodes[i].text +"] = {" + connectedNodeLabels.join(', ') + "}\n";
+    }
+    setListView(!listView);
+    setListText(text);
+    console.log(text);
+  };
 
   const undo = () => {
     if (historyIndex > 0) {
@@ -659,13 +676,23 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        
-            Graph Viewer
-          
+        <div className="flex items-center gap-2">
+
+          Graph Viewer
+
         </div>
         <div>
           <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={list} >
+                  List
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                List
+              </TooltipContent>
+            </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
@@ -713,181 +740,181 @@ export default function Home() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-      </div>
+        </div>
       </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-            <Button
-                variant="outline"
-                className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('circle');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    canvas.style.cursor = 'default';
-                  }
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              <span className="text-xs">Add</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Add node
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('hand');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    canvas.style.cursor = 'grab';
-                  }
-                }}
-              >
-                <Hand className="h-4 w-4" />
-              </Button>
-              <span className="text-xs">Pan</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Pan
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('select');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                }}
-              >
-                <MousePointer className="h-4 w-4" />
-              </Button>
-              <span className="text-xs">Select</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Select node
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setTool('edge');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                }}
-              >
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line"><line x1="19" x2="5" y1="12" y2="12"/></svg>
-              </Button>
-              <span className="text-xs">Edge</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Create edge
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                
-                onClick={() => {
-                  setTool('edgeDashed');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                }}
-              >
-               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20"/><path d="M6 12h2"/><path d="M14 12h2"/><path d="M2 21h20"/></svg>
-              </Button>
-              <span className="text-xs">Dashed Edge</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Create dashed edge
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('delete');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-              <span className="text-xs">Delete</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Delete
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('paint');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="green"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="lucide lucide-paint-bucket"
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
+                  onClick={() => {
+                    setTool('circle');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                    const canvas = canvasRef.current;
+                    if (canvas) {
+                      canvas.style.cursor = 'default';
+                    }
+                  }}
                 >
-                  <path d="M3 6h18" />
-                  <path d="M12 10v11" />
-                  <path d="M5 6.172a4 4 0 0 0 0 5.656" />
-                  <path d="M19 6.172a4 4 0 0 1 0 5.656" />
-                  <path d="M8.293 2.293a1 1 0 0 1 1.414 0l2.683 2.683a1 1 0 0 0 1.414 0l2.586-2.586a1 1 0 0 1 1.414 0l1 1" />
-                </svg>
-              </Button>
-              <span className="text-xs">Paint</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Paint
-          </TooltipContent>
-        </Tooltip>
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <span className="text-xs">Add</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Add node
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
+                  onClick={() => {
+                    setTool('hand');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                    const canvas = canvasRef.current;
+                    if (canvas) {
+                      canvas.style.cursor = 'grab';
+                    }
+                  }}
+                >
+                  <Hand className="h-4 w-4" />
+                </Button>
+                <span className="text-xs">Pan</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Pan
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  className={isSelectActive ? 'bg-accent text-accent-foreground' : ''}
+                  onClick={() => {
+                    setTool('select');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                  }}
+                >
+                  <MousePointer className="h-4 w-4" />
+                </Button>
+                <span className="text-xs">Select</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Select node
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setTool('edge');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line"><line x1="19" x2="5" y1="12" y2="12" /></svg>
+                </Button>
+                <span className="text-xs">Edge</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Create edge
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+
+                  onClick={() => {
+                    setTool('edgeDashed');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line-dashed"><path d="M2 3h20" /><path d="M6 12h2" /><path d="M14 12h2" /><path d="M2 21h20" /></svg>
+                </Button>
+                <span className="text-xs">Dashed Edge</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Create dashed edge
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  className={isDeleteActive ? 'bg-accent text-accent-foreground' : ''}
+                  onClick={() => {
+                    setTool('delete');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <span className="text-xs">Delete</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Delete
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex flex-col items-center">
+                <Button
+                  variant="outline"
+                  className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
+                  onClick={() => {
+                    setTool('paint');
+                    setSelectedNode(null);
+                    setHoveredNode(null);
+                  }}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="green"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-paint-bucket"
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M12 10v11" />
+                    <path d="M5 6.172a4 4 0 0 0 0 5.656" />
+                    <path d="M19 6.172a4 4 0 0 1 0 5.656" />
+                    <path d="M8.293 2.293a1 1 0 0 1 1.414 0l2.683 2.683a1 1 0 0 0 1.414 0l2.586-2.586a1 1 0 0 1 1.414 0l1 1" />
+                  </svg>
+                </Button>
+                <span className="text-xs">Paint</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              Paint
+            </TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -905,6 +932,13 @@ export default function Home() {
           className="border border-border shadow-md"
         />
       </div>
+      {listView && (
+      <div className="w-1/6 rounded p-4">
+          <pre className="whitespace-pre-wrap">
+          {listText}
+          </pre>
+        </div>
+      )}
       <div className="bg-secondary p-4 flex items-center justify-between">
         <div>
           Nodes: {nodes.length} Edges: {edges.length}
@@ -912,7 +946,7 @@ export default function Home() {
         <div>
           {selectedNode && (
             <span>
-              adj[{nodes.find(n => n.id === selectedNode)?.text || 'Unknown'}] = {'{'+getConnectedNodeLabels().join(', ')+'}' || 'None'}
+              adj[{nodes.find(n => n.id === selectedNode)?.text || 'Unknown'}] = {'{' + getConnectedNodeLabels().join(', ') + '}' || 'None'}
             </span>
           )}
         </div>
