@@ -4,3 +4,5 @@ This is a simple canva to visualize graphs made with firebase studio. The main g
 
 The canvas allows you to create and manipulate nodes and edges.
 
+If you take a closer look at the commit tree you will see the prompts used to "vibe code" this app.
+
