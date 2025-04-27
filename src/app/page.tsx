@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Hand, Plus, MousePointer, Trash2, ArrowDownLeft } from 'lucide-react';
+import { Hand, Plus, MousePointer, Trash2, Circle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
 type ToolType = 'hand' | 'circle' | 'select' | 'edge' | 'delete' | 'paint' | 'edgeDashed';
@@ -39,7 +39,7 @@ export default function Home() {
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [tool, setTool] = useState<ToolType>('circle');
+  const [tool, setTool: React.Dispatch<React.SetStateAction<ToolType>>] = useState<ToolType>('circle');
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [isMiddleClicking, setIsMiddleClicking] = useState(false);
   const [selectedNodeCoords, setSelectedNodeCoords] = useState<{x:number|null, y:number|null}>({x:null, y:null});
@@ -585,7 +585,7 @@ export default function Home() {
             setHoveredNode(null);
           }}
         >
-         <ArrowDownLeft className="h-4 w-4" />
+         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-line"><line x1="19" x2="5" y1="12" y2="12"/></svg>
         </Button>
         <Button
           variant="outline"
@@ -609,6 +609,34 @@ export default function Home() {
         >
           <Trash2 className="h-4 w-4" />
         </Button>
+          <Button
+            variant="outline"
+            className={isPaintActive ? 'bg-accent text-accent-foreground' : ''}
+            onClick={() => {
+              setTool('paint');
+              setSelectedNode(null);
+              setHoveredNode(null);
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="green"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-paint-bucket"
+            >
+              <path d="M3 6h18" />
+              <path d="M12 10v11" />
+              <path d="M5 6.172a4 4 0 0 0 0 5.656" />
+              <path d="M19 6.172a4 4 0 0 1 0 5.656" />
+              <path d="M8.293 2.293a1 1 0 0 1 1.414 0l2.683 2.683a1 1 0 0 0 1.414 0l2.586-2.586a1 1 0 0 1 1.414 0l1 1" />
+            </svg>
+          </Button>
       
       </div>
       <div className="flex-1 flex items-center justify-center overflow-hidden">
@@ -648,4 +676,3 @@ export default function Home() {
     </div>
   );
 }
-
