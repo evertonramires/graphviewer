@@ -19,6 +19,8 @@ interface EdgeType {
   start: string;
   end: string;
   dashed: boolean;
+  idNodeA?: string;
+  idNodeB?: string;
 }
 
 const generateId = () => {
@@ -485,6 +487,18 @@ export default function Home() {
   const isDeleteActive = tool === 'delete';
   const isPaintActive = tool === 'paint';
 
+  const getConnectedNodeLabels = () => {
+    if (!selectedNode) return [];
+    const connectedNodes = edges
+      .filter(edge => edge.start === selectedNode || edge.end === selectedNode)
+      .map(edge => {
+        const otherNodeId = edge.start === selectedNode ? edge.end : edge.start;
+        const otherNode = nodes.find(node => node.id === otherNodeId);
+        return otherNode ? otherNode.label : 'Unknown';
+      });
+    return connectedNodes;
+  };
+
 
   return (
     <div className="flex flex-col h-screen">
@@ -623,9 +637,14 @@ export default function Home() {
             </span>
           )}
         </div>
+        <div>
+          {selectedNode && (
+            <span>
+              Connected Nodes: {getConnectedNodeLabels().join(', ') || 'None'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
 }
-
-
