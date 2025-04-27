@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Hand, Plus, MousePointer, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, } from "@/components/ui/tooltip";
@@ -22,6 +22,13 @@ interface EdgeType {
   dashed: boolean;
   idNodeA?: string;
   idNodeB?: string;
+}
+
+type HistoryEntry = {
+  nodes: NodeType[];
+  edges: EdgeType[];
+  paintedNodes: Set<string>;
+  paintedEdges: Set<string>;
 }
 
 const generateId = () => {
@@ -50,7 +57,28 @@ export default function Home() {
   const [textInput, setTextInput] = useState('');
   const [selectedEdge, setSelectedEdge] = useState<string | null>(null);
 
+  const [history, setHistory] = useState<HistoryEntry[]>([{nodes: [], edges: [], paintedNodes: new Set(), paintedEdges: new Set()}]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+
   const nodeRadius = 25;
+
+  const saveStateToHistory = useCallback(() => {
+    setHistory(prevHistory => {
+      const newHistory = [...prevHistory.slice(0, historyIndex + 1), {
+        nodes: JSON.parse(JSON.stringify(nodes)), // Deep copy
+        edges: JSON.parse(JSON.stringify(edges)), // Deep copy
+        paintedNodes: new Set(paintedNodes),
+        paintedEdges: new Set(paintedEdges),
+      }];
+      setHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
+  }, [nodes, edges, paintedNodes, paintedEdges, historyIndex]);
+
+  useEffect(() => {
+    saveStateToHistory();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -148,7 +176,12 @@ export default function Home() {
       label: alphabet[nodes.length % alphabet.length],
       text: alphabet[nodes.length % alphabet.length],
     };
-    setNodes(prevNodes => [...prevNodes, newNode]);
+
+    setNodes(prevNodes => {
+        const newNodes = [...prevNodes, newNode];
+        saveStateToHistory();
+        return newNodes;
+    });
   };
 
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -205,11 +238,20 @@ export default function Home() {
       canvas.style.cursor = 'default';
     } else if (tool === 'delete') {
       if (clickedNode) {
-        setNodes(prevNodes => prevNodes.filter(c => c.id !== clickedNode.id));
-        setEdges(prevEdges => prevEdges.filter(e => e.start !== clickedNode.id && e.end !== clickedNode.id));
+        setNodes(prevNodes => {
+          const newNodes = prevNodes.filter(c => c.id !== clickedNode.id);
+          saveStateToHistory();
+          return newNodes;
+        });
+        setEdges(prevEdges => {
+          const newEdges = prevEdges.filter(e => e.start !== clickedNode.id && e.end !== clickedNode.id);
+          saveStateToHistory();
+          return newEdges;
+        });
         setPaintedNodes(prevPaintedNodes => {
           const newPaintedNodes = new Set(prevPaintedNodes);
           newPaintedNodes.delete(clickedNode.id);
+          saveStateToHistory();
           return newPaintedNodes;
         });
         setPaintedEdges(prevPaintedEdges => {
@@ -217,6 +259,7 @@ export default function Home() {
           edges.filter(e => e.start === clickedNode.id || e.end === clickedNode.id).forEach(edge => {
             newPaintedEdges.delete(edge.id);
           });
+          saveStateToHistory();
           return newPaintedEdges;
         });
       } else {
@@ -243,10 +286,15 @@ export default function Home() {
           }
         }
         if (clickedEdge) {
-          setEdges(prevEdges => prevEdges.filter(e => e.id !== clickedEdge.id));
+          setEdges(prevEdges => {
+            const newEdges = prevEdges.filter(e => e.id !== clickedEdge.id)
+            saveStateToHistory();
+            return newEdges;
+          });
           setPaintedEdges(prevPaintedEdges => {
             const newPaintedEdges = new Set(prevPaintedEdges);
             newPaintedEdges.delete(clickedEdge.id);
+            saveStateToHistory();
             return newPaintedEdges;
           });
         }
@@ -256,7 +304,11 @@ export default function Home() {
         if (potentialEdge) {
           // Create edge
           const newEdge = { id: generateId(), start: potentialEdge, end: clickedNode.id, dashed: tool === 'edgeDashed' };
-          setEdges(prevEdges => [...prevEdges, newEdge]);
+          setEdges(prevEdges => {
+            const newEdges = [...prevEdges, newEdge];
+            saveStateToHistory();
+            return newEdges;
+          });
           setPotentialEdge(null);
           setTool(tool);
         } else {
@@ -274,6 +326,7 @@ export default function Home() {
           } else {
             newPaintedNodes.add(clickedNode.id); // Paint if not already painted
           }
+          saveStateToHistory();
           return newPaintedNodes;
         });
       } else {
@@ -307,6 +360,7 @@ export default function Home() {
             } else {
               newPaintedEdges.add(clickedEdge.id);
             }
+            saveStateToHistory();
             return newPaintedEdges;
           });
         }
@@ -527,6 +581,34 @@ export default function Home() {
   const adjacencyList = getAdjacencyList();
   const selectedNodeConnections = selectedNode ? adjacencyList[selectedNode] : [];
 
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(prevIndex => {
+        const newIndex = prevIndex - 1;
+        const previousState = history[newIndex];
+        setNodes(previousState.nodes);
+        setEdges(previousState.edges);
+        setPaintedNodes(previousState.paintedNodes);
+        setPaintedEdges(previousState.paintedEdges);
+        return newIndex;
+      });
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(prevIndex => {
+        const newIndex = prevIndex + 1;
+        const nextState = history[newIndex];
+        setNodes(nextState.nodes);
+        setEdges(nextState.edges);
+        setPaintedNodes(nextState.paintedNodes);
+        setPaintedEdges(nextState.paintedEdges);
+        return newIndex;
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
@@ -536,6 +618,14 @@ export default function Home() {
             Graph Viewer
           
         </div>
+        <div>
+        <Button variant="outline" onClick={undo} disabled={historyIndex === 0}>
+          Undo
+        </Button>
+        <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
+          Redo
+        </Button>
+      </div>
       </div>
       <div className="bg-secondary p-4 flex items-center justify-start gap-2">
         <TooltipProvider>
@@ -735,17 +825,18 @@ export default function Home() {
         <div>
           {selectedNode && (
             <span>
-              Selected Node: ({selectedNodeCoords.x ? Math.floor(selectedNodeCoords.x) : null}, {selectedNodeCoords.y ? Math.floor(selectedNodeCoords.y) : null})
+              Connected Nodes: {getConnectedNodeLabels().join(', ') || 'None'}
             </span>
           )}
         </div>
         <div>
           {selectedNode && (
             <span>
-              Connected Nodes: {getConnectedNodeLabels().join(', ') || 'None'}
+              Coord.: ({selectedNodeCoords.x ? Math.floor(selectedNodeCoords.x) : null}, {selectedNodeCoords.y ? Math.floor(selectedNodeCoords.y) : null})
             </span>
           )}
         </div>
+
       </div>
     </div>
   );
