@@ -164,14 +164,20 @@ export default function Home() {
         ctx.moveTo(startX, startY);
         ctx.lineTo(endX, endY);
         if (edge.dashed) {
-          ctx.setLineDash([2, 8]); // Dotted line
+          ctx.setLineDash([4, 9]); // Dotted line
+
         } else {
           ctx.setLineDash([]); // Solid line
+
         }
         if (paintedEdges.has(edge.id)) {
           ctx.strokeStyle = 'green'; // Paint edge green if painted
+          ctx.lineWidth = 4;
+
         } else {
           ctx.strokeStyle = 'black';
+          ctx.lineWidth = 2;
+
         }
         ctx.stroke();
         ctx.setLineDash([]); // Reset line dash
