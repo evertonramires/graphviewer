@@ -648,6 +648,31 @@ export default function Home() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex flex-col items-center">
+            <Button
+                variant="outline"
+                className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
+                onClick={() => {
+                  setTool('circle');
+                  setSelectedNode(null);
+                  setHoveredNode(null);
+                  const canvas = canvasRef.current;
+                  if (canvas) {
+                    canvas.style.cursor = 'default';
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <span className="text-xs">Add</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            Add node
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex flex-col items-center">
               <Button
                 variant="outline"
                 className={isHandActive ? 'bg-accent text-accent-foreground' : ''}
@@ -668,31 +693,6 @@ export default function Home() {
           </TooltipTrigger>
           <TooltipContent>
             Pan
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex flex-col items-center">
-              <Button
-                variant="outline"
-                className={isCircleActive ? 'bg-accent text-accent-foreground' : ''}
-                onClick={() => {
-                  setTool('circle');
-                  setSelectedNode(null);
-                  setHoveredNode(null);
-                  const canvas = canvasRef.current;
-                  if (canvas) {
-                    canvas.style.cursor = 'default';
-                  }
-                }}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              <span className="text-xs">Add</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            Add node
           </TooltipContent>
         </Tooltip>
         <Tooltip>
@@ -857,3 +857,4 @@ export default function Home() {
     </div>
   );
 }
+
