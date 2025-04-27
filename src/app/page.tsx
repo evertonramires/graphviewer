@@ -128,14 +128,16 @@ export default function Home() {
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (tool === 'select') return;
-    if (tool === 'edge') return;
-    if (tool === 'edgeDashed') return;
-    if (tool === 'paint') return;
 
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
     const y = (e.clientY - rect.top - pan.y) / zoom;
+
+    if (tool === 'select') return;
+    if (tool === 'edge') return;
+    if (tool === 'edgeDashed') return;
+    if (tool === 'paint') return;
+    if (tool === 'delete') return;
 
     const newNode = {
       id: generateId(),
@@ -216,36 +218,7 @@ export default function Home() {
           return newPaintedEdges;
         });
       } else {
-        let clickedEdge: EdgeType | null = null;
-        for (let i = edges.length - 1; i >= 0; i--) {
-          const edge = edges[i];
-          const startNode = nodes.find(c => c.id === edge.start);
-          const endNode = nodes.find(c => c.id === edge.end);
-          if (startNode && endNode) {
-            const startX = startNode.x;
-            const startY = startNode.y;
-            const endX = endNode.x;
-            const endY = endNode.y;
-
-            const a = {x: (x - pan.x) / zoom, y:(y - pan.y) / zoom};
-            const b = {x: startX, y: startY};
-            const c = {x: endX, y: endY};
-
-            const distance = pointToLineDistance(a, b, c);
-            if (distance < 5) {
-              clickedEdge = edge;
-              break;
-            }
-          }
-        }
-        if (clickedEdge) {
-          setEdges(prevEdges => prevEdges.filter(e => e.id !== clickedEdge.id));
-          setPaintedEdges(prevPaintedEdges => {
-            const newPaintedEdges = new Set(prevPaintedEdges);
-            newPaintedEdges.delete(clickedEdge.id);
-            return newPaintedEdges;
-          });
-        }
+        return;
       }
     } else if (tool === 'edge' || tool === 'edgeDashed') {
       if (clickedNode) {
@@ -498,6 +471,30 @@ export default function Home() {
       });
     return connectedNodes;
   };
+
+  const getAdjacencyList = () => {
+    if (!selectedNode) return {};
+  
+    const adjacencyList: { [key: string]: string[] } = {};
+  
+    nodes.forEach(node => {
+      adjacencyList[node.id] = [];
+    });
+  
+    edges.forEach(edge => {
+      if (edge.start && edge.end) {
+        adjacencyList[edge.start] = adjacencyList[edge.start] || [];
+        adjacencyList[edge.end] = adjacencyList[edge.end] || [];
+        adjacencyList[edge.start].push(edge.end);
+        adjacencyList[edge.end].push(edge.start);
+      }
+    });
+    
+    return adjacencyList;
+  };
+  
+  const adjacencyList = getAdjacencyList();
+  const selectedNodeConnections = selectedNode ? adjacencyList[selectedNode] : [];
 
 
   return (
