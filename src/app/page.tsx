@@ -126,6 +126,8 @@ export default function Home() {
     const canvas = canvasRef.current;
     if (!canvas) return;
     if (tool === 'select') return;
+    if (tool === 'edge') return;
+    if (tool === 'edgeDashed') return;
 
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - pan.x) / zoom;
