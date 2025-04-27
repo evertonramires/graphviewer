@@ -65,6 +65,35 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryEntry[]>([{ nodes: [], edges: [], paintedNodes: new Set(), paintedEdges: new Set() }]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
+  useEffect(() => {
+    // Load data from local storage on component mount
+    const storedNodes = localStorage.getItem('nodes');
+    const storedEdges = localStorage.getItem('edges');
+    const storedPaintedNodes = localStorage.getItem('paintedNodes');
+    const storedPaintedEdges = localStorage.getItem('paintedEdges');
+    const storedHistory = localStorage.getItem('history');
+    const storedHistoryIndex = localStorage.getItem('historyIndex');
+
+    if (storedNodes && storedEdges && storedPaintedNodes && storedPaintedEdges && storedHistory && storedHistoryIndex) {
+      setNodes(JSON.parse(storedNodes));
+      setEdges(JSON.parse(storedEdges));
+      setPaintedNodes(new Set(JSON.parse(storedPaintedNodes)));
+      setPaintedEdges(new Set(JSON.parse(storedPaintedEdges)));
+      setHistory(JSON.parse(storedHistory));
+      setHistoryIndex(JSON.parse(storedHistoryIndex));
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save data to local storage whenever it changes
+    localStorage.setItem('nodes', JSON.stringify(nodes));
+    localStorage.setItem('edges', JSON.stringify(edges));
+    localStorage.setItem('paintedNodes', JSON.stringify([...paintedNodes]));
+    localStorage.setItem('paintedEdges', JSON.stringify([...paintedEdges]));
+    localStorage.setItem('history', JSON.stringify(history));
+    localStorage.setItem('historyIndex', JSON.stringify(historyIndex));
+  }, [nodes, edges, paintedNodes, paintedEdges, history, historyIndex]);
+
   const saveStateToHistory = useCallback(() => {
     setHistory(prevHistory => {
       const newHistory = [...prevHistory.slice(0, historyIndex + 1), {
