@@ -626,6 +626,14 @@ export default function Home() {
     };
   }, [undo, redo]);
 
+  const clearCanvas = () => {
+    setNodes([]);
+    setEdges([]);
+    setPaintedNodes(new Set());
+    setPaintedEdges(new Set());
+    saveStateToHistory();
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <div className="bg-secondary p-4 flex items-center justify-between">
@@ -640,6 +648,9 @@ export default function Home() {
         </Button>
         <Button variant="outline" onClick={redo} disabled={historyIndex === history.length - 1}>
           Redo
+        </Button>
+         <Button variant="outline" onClick={clearCanvas}>
+          Clear
         </Button>
       </div>
       </div>
@@ -721,7 +732,7 @@ export default function Home() {
             <div className="flex flex-col items-center">
               <Button
                 variant="outline"
-                className={isEdgeActive ? 'bg-accent text-accent-foreground' : ''}
+                
                 onClick={() => {
                   setTool('edge');
                   setSelectedNode(null);
@@ -742,7 +753,7 @@ export default function Home() {
             <div className="flex flex-col items-center">
               <Button
                 variant="outline"
-                className={isEdgeDashedActive ? 'bg-accent text-accent-foreground' : ''}
+                
                 onClick={() => {
                   setTool('edgeDashed');
                   setSelectedNode(null);
@@ -857,4 +868,5 @@ export default function Home() {
     </div>
   );
 }
+
 
