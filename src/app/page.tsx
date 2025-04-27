@@ -181,6 +181,10 @@ export default function Home() {
     if (tool === 'hand') {
       canvas.style.cursor = 'grab';
     } else if (tool === 'select') {
+        if (!clickedNode) {
+            setIsDragging(false);
+            return;
+        }
       if (clickedNode) {
         setSelectedNode(clickedNode.id);
         setSelectedNodeCoords({x: clickedNode.x, y: clickedNode.y});
@@ -624,4 +628,3 @@ export default function Home() {
     </div>
   );
 }
-
